@@ -68,6 +68,40 @@ describe('RSK-01 sign-in risk', () => {
   });
 });
 
+describe('RSK-01 / RSK-02 guest exclusions', () => {
+  const GUEST_TYPES = 'internalGuest,b2bCollaborationGuest,b2bCollaborationMember,b2bDirectConnectUser,otherExternalUser,serviceProvider';
+  const signIn = (users: Parameters<typeof pol>[0]['conditions']) => pol({
+    conditions: { ...users, signInRiskLevels: ['high'] }, grantControls: MFA,
+  });
+  const userRisk = (users: Parameters<typeof pol>[0]['conditions']) => pol({
+    conditions: { ...users, userRiskLevels: ['high'] }, grantControls: { operator: 'AND', builtInControls: ['mfa', 'passwordChange'] },
+  });
+  const guestKeyword = { users: { excludeUsers: ['GuestsOrExternalUsers'] } };
+  const guestObject = {
+    users: { excludeGuestsOrExternalUsers: { guestOrExternalUserTypes: GUEST_TYPES, externalTenants: { membershipKind: 'all' } } },
+  } as never;
+
+  test('excluding guests does not create a finding', () => {
+    expect(run('RSK-01', [signIn(guestKeyword)], P2)).toEqual([]);
+    expect(run('RSK-01', [signIn(guestObject)], P2)).toEqual([]);
+    expect(run('RSK-02', [userRisk(guestKeyword)], P2)).toEqual([]);
+    expect(run('RSK-02', [userRisk(guestObject)], P2)).toEqual([]);
+  });
+
+  test('excluding a group is still partial, and the explanation does not mention guests as a limitation', () => {
+    const f1 = single('RSK-01', [signIn({ users: { excludeUsers: ['GuestsOrExternalUsers'], excludeGroups: ['g1'] } })], P2);
+    expect(f1.status).toBe('partial');
+    expect(f1.explanation).toContain('g1');
+    expect(f1.explanation).not.toContain('Guests or external users');
+    expect(single('RSK-02', [userRisk({ users: { excludeGroups: ['g1'] } })], P2).status).toBe('partial');
+  });
+
+  test('remediation says guests may be excluded', () => {
+    expect(single('RSK-01', [], P2).remediation).toMatch(/guests/i);
+    expect(single('RSK-02', [], P2).remediation).toMatch(/guests/i);
+  });
+});
+
 describe('RSK-02 user risk', () => {
   test('gap with P2 when a high user risk policy only requires MFA', () => {
     const f = single('RSK-02', [pol({ conditions: { userRiskLevels: ['high'] }, grantControls: MFA })], P2);

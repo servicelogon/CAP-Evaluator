@@ -18,6 +18,29 @@ const REF = {
 
 const BREAK_GLASS = 'exclude only your break-glass (emergency access) accounts';
 const REVIEW_THEN_ENABLE = 'Start in report-only, review the sign-in logs for impact, then switch the policy to On.';
+const GUESTS_MAY_BE_EXCLUDED = 'Guests and external users may also be excluded, as in the Microsoft-managed policy, because risk '
+  + 'remediation is not supported for them';
+const GUESTS_NOTE = ' Excluding guests and external users is accepted for this rule.';
+
+const GUESTS_KEYWORD = 'guestsorexternalusers';
+
+/** Copy of p without guest exclusions, so that only other exclusions count against risk policies. */
+function withoutGuestExclusions(p: CAPolicy): CAPolicy {
+  const u = p.conditions.users;
+  return {
+    ...p,
+    conditions: {
+      ...p.conditions,
+      users: { ...u, excludeUsers: u.excludeUsers.filter(x => x.toLowerCase() !== GUESTS_KEYWORD), excludeGuestsOrExternalUsers: null },
+    },
+  };
+}
+
+/** Evaluates `rule` as if no policy excluded guests. */
+const toleratingGuests = (rule: Rule): Rule => ({
+  ...rule,
+  run: ctx => rule.run({ ...ctx, policies: ctx.policies.map(withoutGuestExclusions) }),
+});
 
 // ---------- RSK-01 ----------
 
@@ -25,17 +48,18 @@ const RSK01: RuleMeta = {
   id: 'RSK-01', title: 'No sign-in risk policy', family: 'risk', severity: 'high',
   requiredLicense: 'entraP2',
   remediation: 'Turn on the Microsoft-managed policy "Multifactor authentication and reauthentication for risky sign-ins", or create a '
-    + `policy: Users = All users (${BREAK_GLASS}), Target resources = All resources, Conditions > Sign-in risk = High and Medium, Grant = `
-    + 'Require multifactor authentication or an authentication strength (or Block access for High), Session = Sign-in frequency Every '
+    + `policy: Users = All users (${BREAK_GLASS}; ${GUESTS_MAY_BE_EXCLUDED}), Target resources = All resources, Conditions > `
+    + 'Sign-in risk = High and Medium, Grant = Require multifactor authentication or an authentication strength (or Block access for High), Session = Sign-in frequency Every '
     + `time. Make sure users have registered MFA before they become risky. ${REVIEW_THEN_ENABLE}`,
   references: [REF.managedPolicies, REF.grant],
 };
 
-const rsk01 = coverageRule(RSK01, 'allUsers', 'allResources', 'signInRisk', c => `${c.level === 'none'
+const rsk01 = toleratingGuests(coverageRule(RSK01, 'allUsers', 'allResources', 'signInRisk', c => `${c.level === 'none'
   ? 'No enforced policy requires MFA or blocks access for high-risk sign-ins for all users on all resources.'
   : 'High-risk sign-ins are not fully challenged or blocked for all users on all resources.'} `
   + 'Microsoft Entra ID Protection flags sign-ins that look like an attacker (anonymous IP addresses, impossible travel, password '
-  + 'spray, token replay); without a policy acting on that risk, a sign-in with a stolen password is allowed if no other policy stops it.');
+  + 'spray, token replay); without a policy acting on that risk, a sign-in with a stolen password is allowed if no other policy stops it.'
+  + GUESTS_NOTE));
 
 // ---------- RSK-02 ----------
 
@@ -43,18 +67,18 @@ const RSK02: RuleMeta = {
   id: 'RSK-02', title: 'High-risk users not blocked or remediated', family: 'risk', severity: 'high',
   requiredLicense: 'entraP2',
   remediation: 'Turn on the Microsoft-managed policy "Require remediation for high-risk users" or "Block access for high-risk users", or '
-    + `create a policy: Users = All users (${BREAK_GLASS}), Target resources = All resources with no exclusions, Conditions > User risk = `
-    + 'High, Grant = Require all of: Require multifactor authentication AND Require password change (or Require risk remediation AND an '
+    + `create a policy: Users = All users (${BREAK_GLASS}; ${GUESTS_MAY_BE_EXCLUDED}), Target resources = All resources with no `
+    + 'exclusions, Conditions > User risk = High, Grant = Require all of: Require multifactor authentication AND Require password change (or Require risk remediation AND an '
     + `authentication strength), or Block access. ${REVIEW_THEN_ENABLE}`,
   references: [REF.managedPolicies, REF.grant],
 };
 
-const rsk02 = coverageRule(RSK02, 'allUsers', 'allResources', 'userRisk', c => `${c.level === 'none'
+const rsk02 = toleratingGuests(coverageRule(RSK02, 'allUsers', 'allResources', 'userRisk', c => `${c.level === 'none'
   ? 'No enforced policy blocks high-risk users or requires them to remediate (MFA and password change, or risk remediation with an '
     + 'authentication strength) for all users on all resources.'
   : 'High-risk users are not fully blocked or required to remediate for all users on all resources.'} `
   + 'High user risk means Microsoft Entra ID Protection believes the account is compromised, for example because its credentials were '
-  + 'leaked; MFA alone does not remove the attacker\'s knowledge of the password.');
+  + 'leaked; MFA alone does not remove the attacker\'s knowledge of the password.' + GUESTS_NOTE));
 
 // ---------- RSK-03 ----------
 
