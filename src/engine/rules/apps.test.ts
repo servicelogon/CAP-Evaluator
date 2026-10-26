@@ -150,6 +150,20 @@ describe('APP-04 single Microsoft 365 workload targeted', () => {
     });
     expect(run('APP-04', [p])).toEqual([]);
   });
+  test('still fires on a token protection policy that also targets other individual apps', () => {
+    const p = pol({
+      conditions: { applications: { includeApplications: [APP.exchangeOnline, APP.sharePointOnline, APP.azureDevOps] } },
+      sessionControls: { secureSignInSession: { isEnabled: true } },
+    });
+    expect(single('APP-04', [p]).policyIds).toEqual([p.id]);
+  });
+  test('still fires when token protection is present but disabled', () => {
+    const p = pol({
+      conditions: { applications: { includeApplications: [APP.sharePointOnline] } },
+      sessionControls: { secureSignInSession: { isEnabled: false } },
+    });
+    expect(single('APP-04', [p]).policyIds).toEqual([p.id]);
+  });
 });
 
 describe('APP-05 non-targetable client app in a policy', () => {

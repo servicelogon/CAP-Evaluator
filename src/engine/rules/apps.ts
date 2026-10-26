@@ -119,10 +119,11 @@ const APP04: RuleMeta = {
 const WORKLOADS = lower([APP.exchangeOnline, APP.sharePointOnline, APP.teamsServices]);
 const O365_KEY = KEYWORD.office365.toLowerCase();
 /** Token protection must target the workloads individually; Microsoft warns that selecting Office 365 causes failures. */
-const requiresTokenProtection = (p: CAPolicy) => !!p.sessionControls?.secureSignInSession?.isEnabled;
+const isTokenProtectionPolicy = (p: CAPolicy) => !!p.sessionControls?.secureSignInSession?.isEnabled
+  && included(p).every(id => WORKLOADS.includes(id));
 
 const app04 = perPolicyRule(APP04,
-  p => (includesAllApps(p) || included(p).includes(O365_KEY) || requiresTokenProtection(p)
+  p => (includesAllApps(p) || included(p).includes(O365_KEY) || isTokenProtectionPolicy(p)
     ? []
     : included(p).filter(id => WORKLOADS.includes(id))),
   (ctx, p, ids) => `${policyNames(ctx, [p.id])} targets ${labels(ids)} individually rather than the Office 365 app group. Microsoft 365 `

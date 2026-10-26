@@ -178,7 +178,8 @@ export function normalizePolicy(raw: unknown, index: number): { policy: CAPolicy
   if (!isObj(raw)) throw new PolicyValidationError(`Policy ${index + 1}: expected a JSON object`);
   const displayName = str(raw.displayName) || `Policy ${index + 1}`;
   const c = asObj(raw.conditions);
-  const u = c && asObj(c.users);
+  // Workload identity policies may omit users entirely; they assign no users.
+  const u = c && (asObj(c.users) ?? (asObj(c.clientApplications) ? { includeUsers: ['None'] } : null));
   const a = c && asObj(c.applications);
   if (!c || !u) throw new PolicyValidationError(`${displayName}: missing conditions.users`);
   if (!a) throw new PolicyValidationError(`${displayName}: missing conditions.applications`);

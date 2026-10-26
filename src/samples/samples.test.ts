@@ -35,6 +35,12 @@ describe('good tenant sample', () => {
     expect(gaps.filter(g => !accepted.has(g))).toEqual([]);
   });
 
+  test('workload identity policy normalizes with service principals and no user assignees', () => {
+    const sp = goodTenant.policies.find(p => p.displayName.startsWith('CA201'));
+    expect(sp?.conditions.clientApplications?.includeServicePrincipals).toEqual(['ServicePrincipalsInMyTenant']);
+    expect(sp?.conditions.users.includeUsers).toEqual(['None']);
+  });
+
   test('excludes the break-glass accounts from every policy that targets users', () => {
     for (const p of goodTenant.policies) {
       const u = p.conditions.users;

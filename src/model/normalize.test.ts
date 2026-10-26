@@ -35,6 +35,23 @@ test('throws PolicyValidationError with index when unnamed and not an object', a
   expect(() => normalizePolicy(42, 1)).toThrow(PolicyValidationError);
   expect(() => normalizePolicy({ conditions: { users: {} } }, 1)).toThrow(/Policy 2/);
 });
+test('accepts a workload identity policy without conditions.users', () => {
+  const { policy } = normalizePolicy({
+    displayName: 'SP', state: 'enabled',
+    conditions: { applications: { includeApplications: ['All'] }, clientApplications: { includeServicePrincipals: ['ServicePrincipalsInMyTenant'] } },
+  }, 0);
+  expect(policy.conditions.users).toEqual({
+    includeUsers: ['None'], excludeUsers: [], includeGroups: [], excludeGroups: [], includeRoles: [], excludeRoles: [],
+    includeGuestsOrExternalUsers: null, excludeGuestsOrExternalUsers: null,
+  });
+  expect(policy.conditions.clientApplications?.includeServicePrincipals).toEqual(['ServicePrincipalsInMyTenant']);
+});
+test('throws when both conditions.users and conditions.clientApplications are missing', () => {
+  expect(() => normalizePolicy({ displayName: 'X', conditions: { applications: { includeApplications: ['All'] } } }, 0))
+    .toThrow(/X: missing conditions.users/);
+  expect(() => normalizePolicy({ displayName: 'Y', conditions: { applications: {}, clientApplications: null } }, 0))
+    .toThrow(/Y: missing conditions.users/);
+});
 test('defaults id, displayName, invalid state; ignores metadata keys', () => {
   const r = normalizePolicy({ ...base, displayName: undefined, state: 'bogus', '@odata.context': 'x', createdDateTime: 't', description: 'd' }, 4);
   expect(r.policy.id).toMatch(/^[0-9a-f-]{36}$/);
