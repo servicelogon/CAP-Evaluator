@@ -143,6 +143,13 @@ describe('APP-04 single Microsoft 365 workload targeted', () => {
   test('silent when the policy also targets Office365', () =>
     expect(run('APP-04', [appsPolicy({ include: [KEYWORD.office365, APP.sharePointOnline] })])).toEqual([]));
   test('silent on All resources', () => expect(run('APP-04', [appsPolicy()])).toEqual([]));
+  test('silent on a token protection policy, which Microsoft requires to target the workloads individually', () => {
+    const p = pol({
+      conditions: { applications: { includeApplications: [APP.exchangeOnline, APP.sharePointOnline, APP.teamsServices] } },
+      sessionControls: { secureSignInSession: { isEnabled: true } },
+    });
+    expect(run('APP-04', [p])).toEqual([]);
+  });
 });
 
 describe('APP-05 non-targetable client app in a policy', () => {

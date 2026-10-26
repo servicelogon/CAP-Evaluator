@@ -23,6 +23,7 @@ const REF = {
   azureManagement: `${LEARN}/policy-old-require-mfa-azure-mgmt`,
   azureDevOps: 'https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/conditional-access-policies?view=azure-devops',
   commonPolicies: `${LEARN}/concept-conditional-access-policy-common`,
+  tokenProtectionWindows: `${LEARN}/deployment-guide-token-protection-windows`,
 };
 
 const BREAK_GLASS = 'exclude only your break-glass (emergency access) accounts';
@@ -112,14 +113,18 @@ const APP04: RuleMeta = {
   id: 'APP-04', title: 'Single Microsoft 365 workload targeted instead of Office 365', family: 'apps', severity: 'low',
   remediation: 'Target the Office 365 app group instead of individual Exchange Online, SharePoint Online or Teams apps, so the policy '
     + 'applies consistently across the services that share data with each other.',
-  references: [REF.office365Ref, REF.serviceDependencies, REF.cloudApps],
+  references: [REF.office365Ref, REF.serviceDependencies, REF.cloudApps, REF.tokenProtectionWindows],
 };
 
 const WORKLOADS = lower([APP.exchangeOnline, APP.sharePointOnline, APP.teamsServices]);
 const O365_KEY = KEYWORD.office365.toLowerCase();
+/** Token protection must target the workloads individually; Microsoft warns that selecting Office 365 causes failures. */
+const requiresTokenProtection = (p: CAPolicy) => !!p.sessionControls?.secureSignInSession?.isEnabled;
 
 const app04 = perPolicyRule(APP04,
-  p => (includesAllApps(p) || included(p).includes(O365_KEY) ? [] : included(p).filter(id => WORKLOADS.includes(id))),
+  p => (includesAllApps(p) || included(p).includes(O365_KEY) || requiresTokenProtection(p)
+    ? []
+    : included(p).filter(id => WORKLOADS.includes(id))),
   (ctx, p, ids) => `${policyNames(ctx, [p.id])} targets ${labels(ids)} individually rather than the Office 365 app group. Microsoft 365 `
     + 'services depend on each other: Exchange data is also reachable through Search and Teams, and Teams depends on SharePoint and '
     + 'Exchange, so a SharePoint-only policy also affects Teams. Targeting individual workloads leads to inconsistent prompts and data '
