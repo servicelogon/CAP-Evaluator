@@ -1,32 +1,45 @@
-# React + TypeScript + Vite
+# CA Gap Evaluator
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A browser-only tool for finding coverage gaps in Microsoft Entra ID Conditional Access. Import Graph policy JSON or enter policies by hand, then review a heat map, a findings list, and a printable report. Nothing is sent to a server.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open the URL Vite prints (usually `http://localhost:5173`).
+
+```bash
+npm test
+npm run build
+```
+
+## Importing policies
+
+From Graph:
+
+```
+GET https://graph.microsoft.com/beta/identity/conditionalAccess/policies
+```
+
+Paste the JSON (a single policy, an array, or `{ "value": [...] }`) on the Policies step.
+
+## Heat map colors
+
+| Color | Meaning |
+|---|---|
+| Green | Enforced coverage |
+| Amber | Partial (report-only, weakened grant, or narrowed conditions) |
+| Red | Gap |
+| Hatched gray | Control needs a license you did not select |
+| Empty | Not applicable (for example managed device on device registration) |
+
+Rows are resource surfaces (including Microsoft Graph, Intune APIs, and Azure DevOps, which Microsoft Admin Portals does not cover). Columns are controls. Use the All users / Admins / Guests tabs to switch population.
+
+## Limits
+
+The app has no live tenant connection. Group membership, PIM eligible assignments, service principals, and several tenant-wide settings appear on the **Verify manually** checklist.
+
+App catalog date: **2026-10-26**. Research notes: `docs/research/`.
