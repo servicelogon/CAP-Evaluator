@@ -10,7 +10,9 @@ export interface RuleContext { policies: CAPolicy[]; tenant: TenantProfile }
 export interface Rule { id: string; family: RuleFamily; run(ctx: RuleContext): Finding[] }
 export interface RuleMeta {
   id: string; title: string; family: RuleFamily; severity: Severity;
-  remediation: string; references: string[]; requiredLicense?: keyof Licenses;
+  remediation: string; references: string[];
+  /** An array means every listed license is required; their labels are joined with ' + '. */
+  requiredLicense?: keyof Licenses | (keyof Licenses)[];
 }
 
 export const LICENSE_LABEL: Record<keyof Licenses, string> = {
@@ -22,13 +24,14 @@ export const LICENSE_LABEL: Record<keyof Licenses, string> = {
   purviewInsiderRisk: 'Microsoft Purview Insider Risk Management (Adaptive Protection)',
 };
 
-/** Builds a finding; sets status 'requiresLicense' when meta.requiredLicense is not owned, and severity override optional. */
+/** Builds a finding; sets status 'requiresLicense' when any of meta.requiredLicense is not owned, and severity override optional. */
 export function makeFinding(
   meta: RuleMeta, ctx: RuleContext,
   f: { explanation: string; policyIds?: string[]; status?: FindingStatus; severity?: Severity },
 ): Finding {
   const license = meta.requiredLicense;
-  const unlicensed = license !== undefined && !ctx.tenant.licenses[license];
+  const licenses = license === undefined ? [] : Array.isArray(license) ? license : [license];
+  const unlicensed = licenses.some(l => !ctx.tenant.licenses[l]);
   return {
     ruleId: meta.id,
     title: meta.title,
@@ -39,7 +42,7 @@ export function makeFinding(
     explanation: f.explanation,
     remediation: meta.remediation,
     references: meta.references,
-    ...(license !== undefined ? { requiredLicense: LICENSE_LABEL[license] } : {}),
+    ...(licenses.length ? { requiredLicense: licenses.map(l => LICENSE_LABEL[l]).join(' + ') } : {}),
   };
 }
 
