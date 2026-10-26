@@ -45,7 +45,7 @@ test('catalog flags follow the brief', () => {
     'intuneCompanyPortalClient', 'azureAdPowerShell', 'microsoftGraph', 'azureAdGraph'] as const;
   const highValue = ['exchangeOnline', 'sharePointOnline', 'teamsServices', 'azurePortal', 'azureManagement', 'intune',
     'deviceRegistrationService', 'rightsManagement', 'exchangeAdminCenter'] as const;
-  const unverified = ['sharePointOnline', 'intune', 'intuneWebCompanyPortal', 'authBroker'] as const;
+  const unverified = ['sharePointOnline', 'intune', 'intuneWebCompanyPortal', 'authBroker', 'graphExplorer'] as const;
   for (const [key, id] of Object.entries(APP)) {
     const a = lookupApp(id)!;
     expect(a.targetable, key).toBe(!(nonTargetable as readonly string[]).includes(key));
@@ -54,6 +54,11 @@ test('catalog flags follow the brief', () => {
   }
   expect(lookupApp(APP.microsoftGraph)!.notes).toMatch(/Covered only by All resources/);
   expect(lookupApp(APP.azureAdGraph)!.notes).toMatch(/Covered only by All resources/);
+});
+test('Graph Explorer targetability is unverified', () => {
+  const g = lookupApp(APP.graphExplorer)!;
+  expect(g.confidence).toBe('unverified');
+  expect(g.notes).toMatch(/not confirmed by Microsoft Learn/);
 });
 test('surfaces and groups follow the brief', () => {
   const s = (k: keyof typeof APP) => lookupApp(APP[k])!.surface;

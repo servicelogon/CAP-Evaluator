@@ -155,8 +155,8 @@ const ENTRIES: Record<keyof typeof APP, Entry> = {
     source: SRC.firstParty,
   },
   graphExplorer: {
-    name: 'Graph Explorer', surface: 'graph', targetable: true, highValue: false, confidence: 'verified',
-    notes: 'Web app that calls Microsoft Graph. Community reports say it can be targeted, but its Graph calls are only covered by All resources.',
+    name: 'Graph Explorer', surface: 'graph', targetable: true, highValue: false, confidence: 'unverified',
+    notes: 'Web app that calls Microsoft Graph. The app ID is documented, but whether it can be targeted in Conditional Access is not confirmed by Microsoft Learn (community evidence only). Its Graph calls are only covered by All resources.',
     source: SRC.firstParty,
   },
   azureCli: {
