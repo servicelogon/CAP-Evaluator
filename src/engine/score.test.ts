@@ -30,9 +30,10 @@ describe('computeScore', () => {
     expect(computeScore([f('high', 'partial', 'HYG-01'), f('medium', 'gap')])).toBe(96);
   });
 
-  test('rounds to an integer after summing', () => {
-    expect(computeScore([f('medium', 'partial'), f('low', 'partial')])).toBe(98); // 100 - 2.5 = 97.5 → 98
-    expect(computeScore([f('low', 'partial'), f('low', 'partial'), f('low', 'partial')])).toBe(99); // 98.5 → 99
+  test('floors to an integer after summing, so any scored finding lowers the score', () => {
+    expect(computeScore([f('low', 'partial')])).toBe(99); // 100 - 0.5 = 99.5 → 99
+    expect(computeScore([f('medium', 'partial'), f('low', 'partial')])).toBe(97); // 97.5 → 97
+    expect(computeScore([f('low', 'partial'), f('low', 'partial'), f('low', 'partial')])).toBe(98); // 98.5 → 98
   });
 
   test('never below 0', () => {
