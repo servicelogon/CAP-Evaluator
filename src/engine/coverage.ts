@@ -1,6 +1,6 @@
 import type { CAPolicy, Population, TenantProfile } from '../model/types';
 import type { ControlId } from '../catalog/surfaces';
-import { APP, ADMIN_PORTAL_IDS, KEYWORD, OFFICE365_KEY_IDS, USER_ACTION, appLabel, lookupApp, type SurfaceId } from '../catalog/apps';
+import { APP, ADMIN_PORTAL_IDS, OFFICE365_KEY_IDS, USER_ACTION, appLabel, lookupApp, type SurfaceId } from '../catalog/apps';
 import { PRIVILEGED_ROLES, isPrivilegedRole, roleName } from '../catalog/roles';
 import {
   CLIENT_TYPES_REASON, coversLegacyClients, coversModernClients, grantAlternatives, isBlock, isReportOnly,
@@ -133,9 +133,8 @@ export function populationCoverage(p: CAPolicy, pop: Population, t: TenantProfil
 
 // ---------- Surface ----------
 
-const KEYWORDS = lower(Object.values(KEYWORD));
-const isKeyword = (id: string) => KEYWORDS.has(id.toLowerCase());
-const isThirdParty = (id: string) => !isKeyword(id) && !lookupApp(id);
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isThirdParty = (id: string) => GUID.test(id) && !lookupApp(id);
 const CORE_O365 = [APP.exchangeOnline, APP.sharePointOnline, APP.teamsServices];
 const O365_IN_PORTALS = [APP.office365Portal, APP.protectionCenter];
 const GRAPH_EXCLUSION_REASON = 'All resources with exclusions — verify baseline-scopes enforcement setting';
@@ -288,9 +287,8 @@ export function controlCoverage(p: CAPolicy, c: ControlId): Contribution {
 
     case 'userRisk': {
       const alts = grantAlternatives(p);
-      const remediates = alts.length > 0 && alts.every(alt =>
-        alt.includes('block')
-        || (alt.includes('passwordChange') && alt.includes('mfa'))
+      const remediates = isBlock(p) || alts.length > 0 && alts.every(alt =>
+        (alt.includes('passwordChange') && alt.includes('mfa'))
         || (alt.includes('riskRemediation') && alt.includes('authStrength')));
       if (!remediates) return NONE;
       const r = riskLevel(p.conditions.userRiskLevels, 'user');

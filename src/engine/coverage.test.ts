@@ -139,6 +139,10 @@ describe('surfaceCoverage', () => {
     surfaceCoverage(pol({ conditions: { applications: { includeApplications: ['11111111-2222-3333-4444-555555555555'] } } }), 'thirdParty').level,
     surfaceCoverage(pol({ conditions: { applications: { includeApplications: [APP.exchangeOnline] } } }), 'thirdParty').level,
   ]).toEqual(['partial', 'none']));
+  test('non-GUID app names do not count as third-party coverage', () => expect([
+    surfaceCoverage(pol({ conditions: { applications: { includeApplications: ['Salesforce'] } } }), 'thirdParty').level,
+    surfaceCoverage(pol({ conditions: { applications: { includeApplications: ['All'], excludeApplications: ['Salesforce'] } } }), 'thirdParty').level,
+  ]).toEqual(['none', 'full']));
   test('All excluding a third-party app is partial third-party', () => expect(surfaceCoverage(pol({ conditions: { applications: { includeApplications: ['All'], excludeApplications: ['11111111-2222-3333-4444-555555555555'] } } }), 'thirdParty').level).toBe('partial'));
 });
 
@@ -162,6 +166,7 @@ describe('controlCoverage', () => {
   test('high user risk with password change AND mfa is full', () => expect(controlCoverage(pol({ conditions: { userRiskLevels: ['high'] }, grantControls: { operator: 'AND', builtInControls: ['mfa', 'passwordChange'] } }), 'userRisk').level).toBe('full'));
   test('high user risk with risk remediation AND auth strength is full', () => expect(controlCoverage(pol({ conditions: { userRiskLevels: ['high'] }, grantControls: { operator: 'AND', builtInControls: ['riskRemediation'], authenticationStrength: { id: AUTH_STRENGTH.mfa } } }), 'userRisk').level).toBe('full'));
   test('high user risk with MFA only is none', () => expect(controlCoverage(pol({ conditions: { userRiskLevels: ['high'] }, grantControls: { builtInControls: ['mfa'] } }), 'userRisk').level).toBe('none'));
+  test('high user risk with block and mfa is full (block wins)', () => expect(controlCoverage(pol({ conditions: { userRiskLevels: ['high'] }, grantControls: { operator: 'OR', builtInControls: ['block', 'mfa'] } }), 'userRisk').level).toBe('full'));
   test('high user risk block is full', () => expect(controlCoverage(pol({ conditions: { userRiskLevels: ['high'] }, grantControls: { builtInControls: ['block'] } }), 'userRisk').level).toBe('full'));
   test('SIF + never persistent is full session', () => expect(controlCoverage(pol({ sessionControls: { signInFrequency: { isEnabled: true, type: 'hours', value: 1 }, persistentBrowser: { isEnabled: true, mode: 'never' } } }), 'session').level).toBe('full'));
   test('SIF alone is partial session', () => expect(controlCoverage(pol({ sessionControls: { signInFrequency: { isEnabled: true, type: 'hours', value: 1 } } }), 'session').level).toBe('partial'));
