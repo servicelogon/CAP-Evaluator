@@ -1,6 +1,6 @@
 import { PRIVILEGED_ROLES, isPrivilegedRole, roleName } from '../../catalog/roles';
 import type { CAPolicy } from '../../model/types';
-import { controlLabel, displayName, surfaceCoverage, unexpectedExclusions } from '../coverage';
+import { controlLabel, displayName, populationCoverage, surfaceCoverage, unexpectedExclusions } from '../coverage';
 import {
   coversLegacyClients, coversModernClients, grantAlternatives, hasControl, includesAllApps, includesAllUsers, isBlock,
   isEnforced, isMfaControl, isRiskOrFlowScoped, locationLabel, managedDeviceStrength, mfaStrength, phishStrength,
@@ -117,7 +117,6 @@ const wek02: Rule = {
   run: ctx => (ctx.tenant.breakGlass.length
     ? wek02Policies.run(ctx)
     : [makeFinding(WEK02_NONE, ctx, {
-      status: 'unverified',
       explanation: 'No break-glass (emergency access) accounts are configured in tenant setup, so the tool cannot tell emergency-access '
         + 'exclusions from risky ones: every user or group exclusion is reported as unexpected, and it cannot check that your emergency '
         + 'accounts are excluded from policies that could lock everyone out.',
@@ -193,7 +192,10 @@ const wek05 = perPolicyRule(WEK05,
       + `with OR is only as strong as its weakest option; here the weakest is ${controlLabel(p, weakest)}, so a sign-in that meets it `
       + 'is never asked for MFA by this policy.';
   },
-  { severity: p => (targetsAdminRoles(p) || (includesAllUsers(p) && includesAllApps(p)) ? 'high' : 'medium') });
+  {
+    severity: (p, _ids, ctx) => (populationCoverage(p, 'admins', ctx.tenant).level !== 'none' || (includesAllUsers(p) && includesAllApps(p))
+      ? 'high' : 'medium'),
+  });
 
 // ---------- WEK-06 ----------
 

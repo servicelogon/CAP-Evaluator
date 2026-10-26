@@ -108,7 +108,7 @@ describe('WEK-02 break-glass not excluded', () => {
 
   test('single info finding when no break-glass accounts are configured', () => {
     const f = single('WEK-02', [withGrant(MFA)]);
-    expect(f.severity).toBe('info');
+    expect([f.severity, f.status]).toEqual(['info', 'gap']);
     expect(f.title).toBe('No break-glass accounts configured in tenant setup');
     expect(f.explanation).toMatch(/cannot tell/);
   });
@@ -161,12 +161,16 @@ describe('WEK-05 OR grant mixes MFA with weaker controls', () => {
     expect(f.explanation).toMatch(/weakest.*compliant device/);
   });
 
-  test('high for an admin-role policy on selected apps, medium for a group on selected apps, also for risk-scoped', () => {
-    const grant: Grant = { operator: 'OR', builtInControls: ['mfa', 'domainJoinedDevice'] };
-    const admins = withGrant(grant, { conditions: { users: { includeUsers: [], includeRoles: [GLOBAL_ADMIN] }, applications: { includeApplications: [APP.azureManagement] } } });
-    const group = withGrant(grant, { conditions: { users: { includeUsers: [], includeGroups: ['g1'] }, applications: { includeApplications: [APP.azureManagement] } } });
-    const risk = withGrant(grant, { conditions: { users: { includeUsers: [], includeGroups: ['g1'] }, applications: { includeApplications: [APP.azureManagement] }, signInRiskLevels: ['high'] } });
-    expect(run('WEK-05', [admins, group, risk]).map(f => f.severity)).toEqual(['high', 'medium', 'medium']);
+  test('high when the policy may cover admins on selected apps; medium for specific non-admin users, also when risk-scoped', () => {
+    const grant: Grant = { operator: 'OR', builtInControls: ['mfa', 'compliantDevice'] };
+    const apps = { includeApplications: [APP.azureManagement] };
+    const allUsers = withGrant(grant, { conditions: { applications: apps } });
+    const admins = withGrant(grant, { conditions: { users: { includeUsers: [], includeRoles: [GLOBAL_ADMIN] }, applications: apps } });
+    const group = withGrant(grant, { conditions: { users: { includeUsers: [], includeGroups: ['g1'] }, applications: apps } });
+    const users = withGrant(grant, { conditions: { users: { includeUsers: ['u1', 'u2'] }, applications: apps } });
+    const risk = withGrant(grant, { conditions: { users: { includeUsers: ['u1'] }, applications: apps, signInRiskLevels: ['high'] } });
+    expect(run('WEK-05', [allUsers, admins, group, users, risk]).map(f => f.severity))
+      .toEqual(['high', 'high', 'high', 'medium', 'medium']);
   });
 
   test('does not fire for OR of device controls, AND of mfa and device, or a single control', () => {
