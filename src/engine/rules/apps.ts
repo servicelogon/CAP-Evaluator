@@ -2,7 +2,7 @@ import {
   APP, APP_CATALOG, KEYWORD, appLabel, lookupApp, type SurfaceId,
 } from '../../catalog/apps';
 import { isPrivilegedRole } from '../../catalog/roles';
-import type { CAPolicy, Finding, Population } from '../../model/types';
+import type { CAPolicy, Finding, FindingStatus, Population } from '../../model/types';
 import { bestCoverage, type Contribution } from '../coverage';
 import { hasControl, includesAllApps, includesAllUsers, isActive } from '../predicates';
 import { makeFinding, policyNames, type Rule, type RuleContext, type RuleMeta } from './types';
@@ -31,19 +31,23 @@ const REVIEW_THEN_ENABLE = 'Start in report-only, review the sign-in logs for im
 const lower = (xs: string[]) => xs.map(x => x.toLowerCase());
 const included = (p: CAPolicy) => lower(p.conditions.applications.includeApplications);
 const excluded = (p: CAPolicy) => lower(p.conditions.applications.excludeApplications);
-const labels = (ids: string[]) => ids.map(appLabel).join(', ');
+const unverified = (id: string) => lookupApp(id)?.confidence === 'unverified';
+/** appLabel, flagged when the catalog's app ID is community-sourced. */
+const appName = (id: string) => `${appLabel(id)}${unverified(id) ? ' (app ID from community sources)' : ''}`;
+const labels = (ids: string[]) => ids.map(appName).join(', ');
 
 /** One finding per active policy for which `offending` returns a non-empty list of app IDs. */
 function perPolicyRule(
   meta: RuleMeta, offending: (p: CAPolicy) => string[], explain: (ctx: RuleContext, p: CAPolicy, ids: string[]) => string,
-  scope: (p: CAPolicy) => boolean = isActive,
+  opts: { scope?: (p: CAPolicy) => boolean; status?: (ids: string[]) => FindingStatus } = {},
 ): Rule {
+  const { scope = isActive, status = () => 'gap' } = opts;
   return {
     id: meta.id,
     family: meta.family,
     run: ctx => ctx.policies.filter(scope).flatMap(p => {
       const ids = offending(p);
-      return ids.length ? [makeFinding(meta, ctx, { policyIds: [p.id], explanation: explain(ctx, p, ids) })] : [];
+      return ids.length ? [makeFinding(meta, ctx, { policyIds: [p.id], status: status(ids), explanation: explain(ctx, p, ids) })] : [];
     }),
   };
 }
@@ -152,8 +156,8 @@ const nonTargetable = (ids: string[]) => ids.filter(id => lookupApp(id)?.targeta
 const app05 = perPolicyRule(APP05,
   p => nonTargetable([...p.conditions.applications.includeApplications, ...p.conditions.applications.excludeApplications]),
   (ctx, p, ids) => `${policyNames(ctx, [p.id])} includes or excludes apps that Conditional Access cannot target, so these entries have `
-    + `no effect: ${ids.map(id => `${appLabel(id)} (${lookupApp(id)?.notes ?? ''})`).join('; ')}.`,
-  () => true);
+    + `no effect: ${ids.map(id => `${appName(id)}: ${lookupApp(id)?.notes ?? ''}`).join('; ')}`,
+  { scope: () => true, status: ids => (ids.every(unverified) ? 'unverified' : 'gap') });
 
 // ---------- APP-06 / APP-07 shared ----------
 
@@ -162,7 +166,6 @@ const POPULATIONS: { pop: Population; label: string }[] = [
   { pop: 'admins', label: 'administrators' },
 ];
 
-type Result = Contribution & { policyIds: string[] };
 const LEVEL_TEXT: Record<Contribution['level'], string> = {
   none: 'not covered', partial: 'only partly covered', reportOnly: 'covered only by report-only policies', full: 'covered',
 };
@@ -214,7 +217,10 @@ const APP07: RuleMeta = {
   references: [REF.azureManagement, REF.cloudApps, REF.azureDevOps],
 };
 
-const covered = (r: Result) => r.level === 'full' || r.level === 'partial';
+const MGMT_LEVEL_TEXT: Record<Contribution['level'], string> = {
+  full: 'protected with MFA', partial: 'only partially protected with MFA',
+  reportOnly: 'only covered by report-only MFA policies, which enforce nothing', none: 'not protected with MFA',
+};
 
 const app07: Rule = {
   id: APP07.id,
@@ -227,13 +233,13 @@ const app07: Rule = {
         + 'these sign-ins at the platform level, but it is not a replacement for Conditional Access.');
     const mgmt = bestCoverage(ctx.policies, 'admins', 'azureManagement', 'mfa', ctx.tenant);
     const devOps = bestCoverage(ctx.policies, 'admins', 'azureDevOps', 'mfa', ctx.tenant);
-    const devOpsGap = covered(mgmt) && devOps.level === 'none'
+    const devOpsGap = mgmt.level !== 'none' && devOps.level === 'none'
       ? [makeFinding(APP07, ctx, {
         severity: 'medium',
         policyIds: mgmt.policyIds,
-        explanation: `Azure management is protected with MFA for administrators by ${policyNames(ctx, mgmt.policyIds)}, but Azure DevOps `
-          + 'is not. Azure DevOps was removed from Windows Azure Service Management API coverage in September 2025, so it must be targeted '
-          + 'directly (499b84ac-1321-427f-aa17-267ca6975798) or through All resources. Without it, pipelines, repositories and service '
+        explanation: `For administrators, Azure management is ${MGMT_LEVEL_TEXT[mgmt.level]} (${policyNames(ctx, mgmt.policyIds)}), `
+          + 'but Azure DevOps is not protected at all. Azure DevOps was removed from Windows Azure Service Management API coverage in '
+          + 'September 2025, so it must be targeted directly (499b84ac-1321-427f-aa17-267ca6975798) or through All resources. Without it, pipelines, repositories and service '
           + 'connections that deploy to Azure can be reached with a password alone.',
       })]
       : [];

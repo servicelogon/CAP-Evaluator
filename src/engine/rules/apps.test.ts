@@ -98,6 +98,10 @@ describe('APP-02 high-value app excluded', () => {
     expect(f.explanation).toContain('MFA trust');
   });
 
+  test('flags community-sourced app IDs in the label', () =>
+    expect(single('APP-02', [appsPolicy({ exclude: [APP.sharePointOnline] })]).explanation)
+      .toContain('Office 365 SharePoint Online (app ID from community sources)'));
+
   test('silent when only low-value apps are excluded', () =>
     expect(run('APP-02', [appsPolicy({ exclude: [APP.storeForBusiness] })])).toEqual([]));
 });
@@ -153,6 +157,15 @@ describe('APP-05 non-targetable client app in a policy', () => {
   test('fires on excluded client apps too', () =>
     expect(single('APP-05', [appsPolicy({ exclude: [APP.azureCli, APP.teamsClient] })]).explanation).toContain('Azure CLI'));
 
+  test('status unverified when every flagged app is community-sourced', () => {
+    const f = single('APP-05', [appsPolicy({ include: [APP.authBroker] })]);
+    expect(f.status).toBe('unverified');
+    expect(f.explanation).toContain('Microsoft Authentication Broker (app ID from community sources)');
+  });
+
+  test('status stays gap when verified and unverified apps are mixed', () =>
+    expect(single('APP-05', [appsPolicy({ include: [APP.authBroker, APP.graphPowerShell] })]).status).toBe('gap'));
+
   test('fires on disabled policies too', () =>
     expect(run('APP-05', [appsPolicy({ include: [APP.azurePowerShell], state: 'disabled' })])).toHaveLength(1));
 
@@ -195,6 +208,34 @@ describe('APP-07 Azure management and Azure DevOps', () => {
     expect([f.severity, f.status]).toEqual(['medium', 'gap']);
     expect(f.explanation).toContain('Azure DevOps');
     expect(f.explanation).toContain('September 2025');
+  });
+
+  test('Azure DevOps sub-finding says Azure management is only partially protected', () => {
+    const p = pol({
+      conditions: { applications: { includeApplications: [APP.azureManagement] }, locations: { includeLocations: ['All'], excludeLocations: ['AllTrusted'] } },
+      grantControls: MFA,
+    });
+    const devOps = run('APP-07', [p]).find(f => f.severity === 'medium');
+    expect(devOps?.explanation).toContain('Azure management is only partially protected');
+    expect(devOps?.explanation).not.toContain('Azure management is protected');
+  });
+
+  test('Azure DevOps sub-finding says Azure management is report-only', () => {
+    const devOps = run('APP-07', [appsPolicy({ include: [APP.azureManagement], state: REPORT_ONLY })]).find(f => f.severity === 'medium');
+    expect(devOps?.explanation).toContain('Azure management is only covered by report-only MFA policies');
+  });
+
+  test('primary finding is partial when Azure management MFA has a location exclusion', () => {
+    const p = pol({
+      conditions: { locations: { includeLocations: ['All'], excludeLocations: ['AllTrusted'] } }, grantControls: MFA,
+    });
+    const f = single('APP-07', [p]);
+    expect([f.severity, f.status, f.policyIds]).toEqual(['high', 'partial', [p.id]]);
+  });
+
+  test('primary finding is partial when Azure management MFA is report-only', () => {
+    const fs = run('APP-07', [appsPolicy({ state: REPORT_ONLY })]);
+    expect(fs.map(f => [f.severity, f.status])).toEqual([['high', 'partial']]);
   });
 
   test('silent with an All users / All resources MFA policy', () => expect(run('APP-07', [appsPolicy()])).toEqual([]));
