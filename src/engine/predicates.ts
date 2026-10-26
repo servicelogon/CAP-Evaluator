@@ -16,7 +16,7 @@ const clientTypes = (p: CAPolicy) => p.conditions.clientAppTypes;
 export function coversLegacyClients(p: CAPolicy): Strength {
   const types = clientTypes(p);
   if (types.includes('all')) return 'full';
-  const eas = types.includes('exchangeActiveSync') || types.includes('easSupported');
+  const eas = types.includes('exchangeActiveSync');
   const other = types.includes('other');
   if (eas && other) return 'full';
   return eas || other ? 'partial' : 'none';

@@ -50,6 +50,11 @@ describe('predicates', () => {
     coversLegacyClients(pol({ conditions: { clientAppTypes: ['exchangeActiveSync'] } })),
     coversLegacyClients(pol({ conditions: { clientAppTypes: ['browser', 'mobileAppsAndDesktopClients'] } })),
   ]).toEqual(['full', 'full', 'partial', 'none']));
+  test('easSupported does not count as Exchange ActiveSync', () => {
+    const p = pol({ conditions: { clientAppTypes: ['other', 'easSupported'] }, grantControls: { builtInControls: ['block'] } });
+    expect(coversLegacyClients(p)).toBe('partial');
+    expect(controlCoverage(p, 'legacyBlocked').level).toBe('partial');
+  });
   test('coversModernClients needs browser and mobile/desktop', () => expect([
     coversModernClients(pol({})),
     coversModernClients(pol({ conditions: { clientAppTypes: ['browser', 'mobileAppsAndDesktopClients'] } })),

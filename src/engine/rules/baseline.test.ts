@@ -138,6 +138,10 @@ describe('baseline rules', () => {
       expect(f.explanation).toContain('Legacy block');
     });
     test('passes when EAS is included', () => expect(run('BAS-02', [legacyBlock()])).toEqual([]));
+    test('easSupported does not count as Exchange ActiveSync', () =>
+      expect(single('BAS-02', [pol({ conditions: { clientAppTypes: ['other', 'easSupported'] }, grantControls: { builtInControls: ['block'] } })]).status).toBe('gap'));
+    test('BAS-01 treats an other + easSupported block as partial', () =>
+      expect(single('BAS-01', [pol({ conditions: { clientAppTypes: ['other', 'easSupported'] }, grantControls: { builtInControls: ['block'] } })]).status).toBe('partial'));
     test('ignores disabled policies', () =>
       expect(run('BAS-02', [pol({ state: 'disabled', conditions: { clientAppTypes: ['other'] }, grantControls: { builtInControls: ['block'] } })])).toEqual([]));
   });
@@ -251,6 +255,27 @@ describe('baseline rules', () => {
         grantControls: { builtInControls: ['mfa'] },
       });
       expect(run('BAS-09', [p]).filter(f => f.explanation.includes('unsupported'))).toHaveLength(1);
+    });
+    test('client app types of all plus browser are flagged', () => {
+      const p = pol({
+        conditions: { clientAppTypes: ['all', 'browser'], applications: { includeApplications: [], includeUserActions: [USER_ACTION.registerDevice] } },
+        grantControls: { builtInControls: ['mfa'] },
+      });
+      expect(run('BAS-09', [p]).filter(f => f.explanation.includes('unsupported'))).toHaveLength(1);
+    });
+    test('locations of only All with no exclusions are not flagged', () => {
+      const p = pol({
+        conditions: { applications: { includeApplications: [], includeUserActions: [USER_ACTION.registerDevice] }, locations: { includeLocations: ['All'], excludeLocations: [] } },
+        grantControls: { builtInControls: ['mfa'] },
+      });
+      expect(run('BAS-09', [p])).toEqual([]);
+    });
+    test('block on the user action does not satisfy coverage', () => {
+      const p = userAction(USER_ACTION.registerDevice, { builtInControls: ['block'] });
+      const fs = run('BAS-09', [p]);
+      expect(fs).toHaveLength(2);
+      expect(fs.filter(f => f.explanation.includes('unsupported')).map(f => f.policyIds)).toEqual([[p.id]]);
+      expect(fs.filter(f => !f.explanation.includes('unsupported')).map(f => f.status)).toEqual(['gap']);
     });
     test('device filter is flagged', () => {
       const p = pol({

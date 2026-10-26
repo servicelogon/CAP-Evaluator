@@ -59,7 +59,7 @@ const BAS02: RuleMeta = {
 
 const omitsEas = (p: CAPolicy) => {
   const types = p.conditions.clientAppTypes;
-  return types.includes('other') && !types.includes('all') && !types.includes('exchangeActiveSync') && !types.includes('easSupported');
+  return types.includes('other') && !types.includes('all') && !types.includes('exchangeActiveSync');
 };
 
 const bas02: Rule = {
@@ -235,14 +235,18 @@ const CONTROL_NAMES: Record<string, string> = {
   riskRemediation: 'risk remediation',
 };
 
-function unsupportedRegisterDevice(p: CAPolicy): string[] {
-  const c = p.conditions;
+function unsupportedGrants(p: CAPolicy): string[] {
   const g = p.grantControls;
-  const grants = [
+  return [
     ...(g?.builtInControls.filter(x => x !== 'mfa').map(x => CONTROL_NAMES[x] ?? x) ?? []),
     ...(g?.termsOfUse.length ? ['terms of use'] : []),
     ...(g?.customAuthenticationFactors.length ? ['custom controls'] : []),
   ];
+}
+
+function unsupportedRegisterDevice(p: CAPolicy): string[] {
+  const c = p.conditions;
+  const grants = unsupportedGrants(p);
   const loc = c.locations;
   const problems: string[] = [];
   if (grants.length) problems.push(`grant controls other than MFA or authentication strength (${grants.join(', ')}) are not available for this user action`);
@@ -250,7 +254,7 @@ function unsupportedRegisterDevice(p: CAPolicy): string[] {
     problems.push('it uses a location condition, but location conditions are not enforced for device registration');
   }
   if (c.devices?.deviceFilter) problems.push('it uses a filter for devices, which is not available for this user action');
-  if (!c.clientAppTypes.includes('all')) problems.push(`it limits client apps (${c.clientAppTypes.join(', ')}), which is not available for this user action`);
+  if (c.clientAppTypes.length !== 1 || c.clientAppTypes[0] !== 'all') problems.push(`it limits client apps (${c.clientAppTypes.join(', ')}), which is not available for this user action`);
   return problems;
 }
 
@@ -260,7 +264,7 @@ const bas09: Rule = {
   id: BAS09.id,
   family: BAS09.family,
   run: (ctx: RuleContext) => [
-    ...bas09Coverage.run(ctx),
+    ...bas09Coverage.run({ ...ctx, policies: ctx.policies.filter(p => !unsupportedGrants(p).length) }),
     ...ctx.policies.filter(p => isActive(p) && targetsRegisterDevice(p)).flatMap(p => {
       const problems = unsupportedRegisterDevice(p);
       return problems.length ? [makeFinding(BAS09_UNSUPPORTED, ctx, {
