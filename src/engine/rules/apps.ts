@@ -2,10 +2,10 @@ import {
   APP, APP_CATALOG, KEYWORD, appLabel, lookupApp, type SurfaceId,
 } from '../../catalog/apps';
 import { isPrivilegedRole } from '../../catalog/roles';
-import type { CAPolicy, Finding, FindingStatus, Population } from '../../model/types';
+import type { CAPolicy, Finding, Population } from '../../model/types';
 import { bestCoverage, type Contribution } from '../coverage';
 import { hasControl, includesAllApps, includesAllUsers, isActive } from '../predicates';
-import { makeFinding, policyNames, type Rule, type RuleContext, type RuleMeta } from './types';
+import { makeFinding, perPolicyRule, policyNames, type Rule, type RuleContext, type RuleMeta } from './types';
 
 const LEARN = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access';
 const REF = {
@@ -35,22 +35,6 @@ const unverified = (id: string) => lookupApp(id)?.confidence === 'unverified';
 /** appLabel, flagged when the catalog's app ID is community-sourced. */
 const appName = (id: string) => `${appLabel(id)}${unverified(id) ? ' (app ID from community sources)' : ''}`;
 const labels = (ids: string[]) => ids.map(appName).join(', ');
-
-/** One finding per active policy for which `offending` returns a non-empty list of app IDs. */
-function perPolicyRule(
-  meta: RuleMeta, offending: (p: CAPolicy) => string[], explain: (ctx: RuleContext, p: CAPolicy, ids: string[]) => string,
-  opts: { scope?: (p: CAPolicy) => boolean; status?: (ids: string[]) => FindingStatus } = {},
-): Rule {
-  const { scope = isActive, status = () => 'gap' } = opts;
-  return {
-    id: meta.id,
-    family: meta.family,
-    run: ctx => ctx.policies.filter(scope).flatMap(p => {
-      const ids = offending(p);
-      return ids.length ? [makeFinding(meta, ctx, { policyIds: [p.id], status: status(ids), explanation: explain(ctx, p, ids) })] : [];
-    }),
-  };
-}
 
 // ---------- APP-01 ----------
 

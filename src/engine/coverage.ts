@@ -24,7 +24,8 @@ const GUESTS_LABEL = 'Guests or external users';
 const SCOPED_REASON = 'scoped to specific groups/users/roles, not All users';
 const ADMIN_GROUP_REASON = 'scoped by group; cannot verify it contains all admins';
 
-function displayName(t: TenantProfile, id: string): string {
+/** Tenant display name for an object ID (case-insensitive), or the ID itself. */
+export function displayName(t: TenantProfile, id: string): string {
   const exact = t.displayNames[id];
   if (exact !== undefined) return exact;
   const key = Object.keys(t.displayNames).find(k => k.toLowerCase() === id.toLowerCase());
@@ -217,7 +218,8 @@ const CONTROL_LABELS: Record<string, string> = {
   riskRemediation: 'risk remediation', termsOfUse: 'terms of use', customControl: 'custom control',
 };
 
-function controlLabel(p: CAPolicy, c: string): string {
+/** Human-readable label for a grant alternative control as returned by grantAlternatives. */
+export function controlLabel(p: CAPolicy, c: string): string {
   if (c === 'authStrength') {
     const name = p.grantControls?.authenticationStrength?.displayName;
     return name ? `authentication strength (${name})` : 'authentication strength';

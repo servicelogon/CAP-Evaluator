@@ -52,8 +52,11 @@ const strengthIsMfa = (p: CAPolicy) => {
   return req === undefined || req.toLowerCase() === 'mfa';
 };
 
+/** Whether a grant alternative control (as returned by grantAlternatives) counts as MFA. */
+export const isMfaControl = (p: CAPolicy, c: string) => c === 'mfa' || (c === 'authStrength' && strengthIsMfa(p));
+
 export function mfaStrength(p: CAPolicy): Strength {
-  return strength(p, c => c === 'mfa' || (c === 'authStrength' && strengthIsMfa(p)));
+  return strength(p, c => isMfaControl(p, c));
 }
 
 export function phishStrength(p: CAPolicy): Strength {
@@ -80,7 +83,7 @@ export function isRiskOrFlowScoped(p: CAPolicy): boolean {
 export const CLIENT_TYPES_REASON = 'does not cover browser and modern clients';
 
 const LOCATION_LABELS: Record<string, string> = { All: 'All locations', AllTrusted: 'All trusted locations' };
-const locationLabel = (id: string) => LOCATION_LABELS[id] ?? id;
+export const locationLabel = (id: string) => LOCATION_LABELS[id] ?? id;
 
 /** Narrowing conditions that make coverage partial; returns human-readable reasons. */
 export function narrowingReasons(p: CAPolicy): string[] {

@@ -43,6 +43,33 @@ export function makeFinding(
   };
 }
 
+/**
+ * One finding per policy in `scope` (default: active) for which `offending` returns a non-empty list (IDs or labels).
+ * `status` and `severity` may depend on the list and the policy.
+ */
+export function perPolicyRule(
+  meta: RuleMeta, offending: (p: CAPolicy, ctx: RuleContext) => string[], explain: (ctx: RuleContext, p: CAPolicy, ids: string[]) => string,
+  opts: {
+    scope?: (p: CAPolicy) => boolean;
+    status?: (ids: string[]) => FindingStatus;
+    severity?: (p: CAPolicy, ids: string[], ctx: RuleContext) => Severity;
+  } = {},
+): Rule {
+  const { scope = isActive, status = () => 'gap', severity = () => meta.severity } = opts;
+  return {
+    id: meta.id,
+    family: meta.family,
+    run: ctx => ctx.policies.filter(scope).flatMap(p => {
+      const ids = offending(p, ctx);
+      return ids.length
+        ? [makeFinding(meta, ctx, {
+          policyIds: [p.id], status: status(ids), severity: severity(p, ids, ctx), explanation: explain(ctx, p, ids),
+        })]
+        : [];
+    }),
+  };
+}
+
 /** Quoted display names of the given policies, e.g. `"Block legacy auth", "MFA"`. */
 export function policyNames(ctx: RuleContext, ids: string[]): string {
   return ids.map(id => `"${ctx.policies.find(p => p.id === id)?.displayName ?? id}"`).join(', ');
