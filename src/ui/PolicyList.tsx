@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { blankPolicy } from '../model/newPolicy';
 import { goodTenant } from '../samples/goodTenant';
 import { weakTenant } from '../samples/weakTenant';
@@ -13,16 +14,17 @@ interface Props {
 }
 
 export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
+  const [showImport, setShowImport] = useState(false);
   return (
     <section>
       <p className="kicker">Step 2</p>
       <h2>Policies</h2>
       <p className="lede">
-        Import Microsoft Graph JSON or add policies by hand. Load a sample tenant if you want to see the evaluator
-        before using your own configuration.
+        Build each policy with the same Assignments, Conditions, and Access controls as the Entra admin center. Import JSON only if you already exported policies from Graph.
       </p>
       <div className="actions">
-        <button type="button" className="btn" onClick={() => onEdit(blankPolicy())}>Add policy</button>
+        <button type="button" className="btn" onClick={() => onEdit(blankPolicy())}>Create new policy</button>
+        <button type="button" className="btn secondary" onClick={() => setShowImport((v) => !v)}>Import a JSON file</button>
         <button
           type="button"
           className="btn secondary"
@@ -45,14 +47,16 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
         </button>
       </div>
 
-      <PolicyImport
-        onImport={(incoming, { tenant, replace }) => {
-          if (tenant) onTenant(tenant);
-          onPolicies(replace ? incoming : [...policies, ...incoming]);
-        }}
-      />
+      {showImport && (
+        <PolicyImport
+          onImport={(incoming, { tenant, replace }) => {
+            if (tenant) onTenant(tenant);
+            onPolicies(replace ? incoming : [...policies, ...incoming]);
+          }}
+        />
+      )}
 
-      {policies.length === 0 && <p className="muted">No policies yet. Import JSON, add a policy, or load a sample.</p>}
+      {policies.length === 0 && <p className="muted">No policies yet. Create a policy, or import a JSON file.</p>}
       {policies.map((p) => (
         <article className="card policy-card" key={p.id}>
           <div>

@@ -15,6 +15,10 @@ export default function App() {
     saveState(state);
   }, [state]);
 
+  useEffect(() => {
+    if (editing) window.scrollTo(0, 0);
+  }, [editing]);
+
   const idx = stepIndex(state.step);
 
   function go(step: AppState['step']) {
@@ -26,7 +30,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="brand">
-          <span className="mark" aria-hidden="true" />
+          <img className="mark" src={`${import.meta.env.BASE_URL}logo.png`} alt="" />
           <div>
             <h1>CA Gap Evaluator</h1>
             <p>Conditional Access coverage, analyzed locally.</p>

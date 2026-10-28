@@ -13,6 +13,8 @@ test('import paste adds a policy card', () => {
       onEdit={() => undefined}
     />,
   );
+  fireEvent.click(screen.getByRole('button', { name: 'Import a JSON file' }));
+  fireEvent.click(screen.getByText('Or paste JSON'));
   fireEvent.change(screen.getByLabelText('Policy JSON'), {
     target: { value: JSON.stringify({ displayName: 'Block legacy', state: 'enabled', conditions: { users: { includeUsers: ['All'] }, applications: { includeApplications: ['All'] } } }) },
   });

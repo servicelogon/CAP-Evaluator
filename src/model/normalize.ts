@@ -19,6 +19,19 @@ const KNOWN_KEYS = new Set([
 ]);
 const GUID = /^[0-9a-f-]{36}$/i;
 
+/** `randomUUID` is secure-context only, so phones on a LAN `http://192.x` URL cannot create policies without a fallback. */
+export function newId(): string {
+  const c = globalThis.crypto;
+  if (typeof c?.randomUUID === 'function') return c.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (typeof c?.getRandomValues === 'function') c.getRandomValues(bytes);
+  else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
 const asObj = (v: unknown): Obj | null => (isObj(v) ? v : null);
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
@@ -197,7 +210,7 @@ export function normalizePolicy(raw: unknown, index: number): { policy: CAPolicy
   if (extraKeys.length) notes.push(`Unknown properties preserved: ${extraKeys.join(', ')}`);
 
   const policy: CAPolicy = {
-    id: str(raw.id) || crypto.randomUUID(),
+    id: str(raw.id) || newId(),
     displayName,
     state,
     conditions: conditions(c, u, a),

@@ -1,3 +1,4 @@
+import { expect, test, vi } from 'vitest';
 import { parseImport } from './importPolicies';
 import { blankPolicy } from './newPolicy';
 
@@ -36,4 +37,14 @@ test('blankPolicy has report-only defaults', () => {
   expect(p.conditions.clientAppTypes).toEqual(['all']);
   expect(p.grantControls?.operator).toBe('OR');
   expect(p.grantControls?.builtInControls).toEqual([]);
+});
+test('blankPolicy still gets an id when randomUUID is unavailable', () => {
+  const real = globalThis.crypto;
+  vi.stubGlobal('crypto', { getRandomValues: real.getRandomValues.bind(real) });
+  try {
+    const p = blankPolicy();
+    expect(p.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

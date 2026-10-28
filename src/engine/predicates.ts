@@ -1,5 +1,6 @@
-import type { CAPolicy } from '../model/types';
 import { isPhishResistant } from '../catalog/authStrengths';
+import { countryName } from '../catalog/locations';
+import type { CAPolicy } from '../model/types';
 
 export type Strength = 'full' | 'partial' | 'none';
 
@@ -83,7 +84,7 @@ export function isRiskOrFlowScoped(p: CAPolicy): boolean {
 export const CLIENT_TYPES_REASON = 'does not cover browser and modern clients';
 
 const LOCATION_LABELS: Record<string, string> = { All: 'All locations', AllTrusted: 'All trusted locations' };
-export const locationLabel = (id: string) => LOCATION_LABELS[id] ?? id;
+export const locationLabel = (id: string) => LOCATION_LABELS[id] ?? countryName(id) ?? id;
 
 /** Narrowing conditions that make coverage partial; returns human-readable reasons. */
 export function narrowingReasons(p: CAPolicy): string[] {

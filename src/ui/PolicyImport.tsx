@@ -36,11 +36,29 @@ export function PolicyImport({ onImport }: Props) {
 
   return (
     <div className="card">
-      <h3>Import JSON</h3>
+      <h3>Import a JSON file</h3>
       <p className="muted">
-        Paste a policy, an array of policies, or a Graph response <code>{'{ "value": [...] }'}</code>.
-        Files exported from this app also restore tenant setup.
+        Choose a file exported from this app, or a Graph response from <code>GET /identity/conditionalAccess/policies</code>.
       </p>
+      <label className="btn" style={{ cursor: 'pointer', display: 'inline-block' }}>
+        Choose JSON file
+        <input
+          type="file"
+          accept="application/json,.json"
+          hidden
+          aria-label="Policy JSON file"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const raw = await file.text();
+            setText(raw);
+            apply(raw);
+            e.target.value = '';
+          }}
+        />
+      </label>
+      <details className="import-paste">
+        <summary>Or paste JSON</summary>
       <textarea
         className="search"
         rows={8}
@@ -54,27 +72,11 @@ export function PolicyImport({ onImport }: Props) {
         Replace existing policies
       </label>
       <div className="actions">
-        <button type="button" className="btn" onClick={() => apply(text)} disabled={!text.trim()}>
+        <button type="button" className="btn secondary" onClick={() => apply(text)} disabled={!text.trim()}>
           Import pasted JSON
         </button>
-        <label className="btn secondary" style={{ cursor: 'pointer' }}>
-          Choose file
-          <input
-            type="file"
-            accept="application/json,.json"
-            hidden
-            aria-label="Policy JSON file"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const raw = await file.text();
-              setText(raw);
-              apply(raw);
-              e.target.value = '';
-            }}
-          />
-        </label>
       </div>
+      </details>
       {ok && <p className="ok">{ok}</p>}
       {errors.map((err) => <p className="error" key={err}>{err}</p>)}
       {notes.map((n) => <p className="warn" key={n}>{n}</p>)}
