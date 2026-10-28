@@ -1,5 +1,7 @@
 # CA Gap Evaluator
 
+![Coverage heat map](docs/heatmap.png)
+
 A browser-only tool for finding coverage gaps in Microsoft Entra ID Conditional Access. Import Graph policy JSON or enter policies by hand, then review a heat map, a findings list, and a printable report. Nothing is sent to a server.
 
 ## Run locally
