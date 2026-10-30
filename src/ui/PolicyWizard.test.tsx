@@ -43,3 +43,22 @@ test('builder uses Entra assignment headings', () => {
   expect(screen.getByRole('button', { name: 'Grant' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Session' })).toBeTruthy();
 });
+
+test('Azure CLI does not claim that only All resources covers Graph', () => {
+  render(<PolicyWizard policy={blankPolicy()} onSave={() => undefined} onCancel={() => undefined} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Target resources' }));
+  fireEvent.click(screen.getByLabelText('Select resources'));
+  fireEvent.change(screen.getByLabelText('Search resources'), { target: { value: 'Azure CLI' } });
+  expect(screen.getByText('This is a client app and cannot be targeted.')).toBeTruthy();
+  expect(screen.queryByText('Microsoft Graph can only be covered via All resources.')).toBeNull();
+});
+
+test('excluding Office 365 writes the keyword', () => {
+  const onSave = vi.fn();
+  render(<PolicyWizard policy={blankPolicy()} onSave={onSave} onCancel={() => undefined} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Target resources' }));
+  fireEvent.click(screen.getByLabelText('All resources'));
+  fireEvent.click(screen.getByLabelText('Exclude Office 365'));
+  fireEvent.click(screen.getByRole('button', { name: 'Save policy' }));
+  expect(onSave.mock.calls[0][0].conditions.applications.excludeApplications).toContain('Office365');
+});

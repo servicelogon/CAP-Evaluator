@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { APP_CATALOG, KEYWORD, USER_ACTION, appLabel } from '../catalog/apps';
+import { APP_CATALOG, KEYWORD, USER_ACTION, appLabel, pickerWarning } from '../catalog/apps';
 import { AUTH_STRENGTH } from '../catalog/authStrengths';
 import { EXTENDED_ROLES, PRIVILEGED_ROLES, roleName } from '../catalog/roles';
 import type { CAApplications, CAPolicy, CAUsers, PolicyState } from '../model/types';
@@ -43,6 +43,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
     onDirtyChange?.(JSON.stringify(draft) !== JSON.stringify(policy));
   }, [draft, policy, onDirtyChange]);
   const [appQuery, setAppQuery] = useState('');
+  const [excludeQuery, setExcludeQuery] = useState('');
   const [customApp, setCustomApp] = useState('');
   const [showAllRoles, setShowAllRoles] = useState(false);
   const [includeMode, setIncludeMode] = useState<TargetKind>(() =>
@@ -65,6 +66,13 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
       !q || a.name.toLowerCase().includes(q) || a.appId.includes(q) || a.aliases.some((x) => x.toLowerCase().includes(q)),
     );
   }, [appQuery]);
+
+  const filteredExclude = useMemo(() => {
+    const q = excludeQuery.trim().toLowerCase();
+    return APP_CATALOG.filter((a) =>
+      !q || a.name.toLowerCase().includes(q) || a.appId.includes(q) || a.aliases.some((alias) => alias.toLowerCase().includes(q)),
+    );
+  }, [excludeQuery]);
 
   function patch(next: Partial<CAPolicy>) {
     setDraft({ ...draft, ...next });
@@ -229,7 +237,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
                       <input type="checkbox" checked={apps.includeApplications.includes(a.appId)} onChange={(e) => toggleApp(apps, a.appId, e.target.checked, setApps)} />
                       <span>
                         {a.name}
-                        {!a.targetable && <span className="app-note"> This is a client app and cannot be targeted. Microsoft Graph can only be covered via All resources.</span>}
+                        {pickerWarning(a) && <span className="app-note">{pickerWarning(a)}</span>}
                         <span className="app-note">{a.appId}</span>
                       </span>
                     </label>
@@ -284,12 +292,53 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
         )}
 
         <p className="subhead">Exclude</p>
-        <label className="field">
-          Excluded cloud apps
-          <textarea rows={3} placeholder="App IDs, Office365, or MicrosoftAdminPortals" value={apps.excludeApplications.join('\n')} onChange={(e) => setApps({ excludeApplications: linesOf(e.target.value) })} />
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={apps.excludeApplications.includes(KEYWORD.office365)}
+            onChange={(e) => setApps({
+              excludeApplications: e.target.checked
+                ? [...apps.excludeApplications, KEYWORD.office365]
+                : apps.excludeApplications.filter((id) => id !== KEYWORD.office365),
+            })}
+          />
+          Exclude Office 365
         </label>
-        {apps.excludeApplications.length > 0 && (
-          <p className="muted">{apps.excludeApplications.map(appLabel).join(', ')}</p>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={apps.excludeApplications.includes(KEYWORD.adminPortals)}
+            onChange={(e) => setApps({
+              excludeApplications: e.target.checked
+                ? [...apps.excludeApplications, KEYWORD.adminPortals]
+                : apps.excludeApplications.filter((id) => id !== KEYWORD.adminPortals),
+            })}
+          />
+          Exclude Microsoft Admin Portals
+        </label>
+        {apps.includeApplications.includes(KEYWORD.all) && (
+          <>
+        <input className="search" value={excludeQuery} onChange={(e) => setExcludeQuery(e.target.value)} placeholder="Search resources to exclude" aria-label="Search resources to exclude" />
+        <div className="app-pick">
+          {filteredExclude.map((a) => (
+            <label className="check" key={`ex-${a.appId}`}>
+              <input
+                type="checkbox"
+                checked={apps.excludeApplications.includes(a.appId)}
+                onChange={(e) => setApps({
+                  excludeApplications: e.target.checked
+                    ? [...apps.excludeApplications.filter((id) => id !== a.appId), a.appId]
+                    : apps.excludeApplications.filter((id) => id !== a.appId),
+                })}
+              />
+              <span>
+                {a.name}
+                {pickerWarning(a) && <span className="app-note">{pickerWarning(a)}</span>}
+              </span>
+            </label>
+          ))}
+        </div>
+          </>
         )}
       </Blade>
 
