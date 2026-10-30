@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import type { CAPolicy, Finding, RuleFamily, Severity } from '../model/types';
 import { FAMILY_LABEL, FINDING_STATUS_LABEL, SEVERITY_LABEL } from './labels';
 
@@ -15,7 +15,17 @@ export function FindingsList({ findings, policies, pinnedRuleIds }: Props) {
   const [severity, setSeverity] = useState<string>('all');
   const [family, setFamily] = useState<string>('all');
   const [policyId, setPolicyId] = useState<string>('all');
+  const [open, setOpen] = useState<Set<string>>(new Set());
   const names = useMemo(() => new Map(policies.map((p) => [p.id, p.displayName])), [policies]);
+
+  function toggle(key: string) {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   const pinned = pinnedRuleIds && pinnedRuleIds.length > 0 ? new Set(pinnedRuleIds) : null;
   const relatedCount = pinned ? findings.filter((f) => pinned.has(f.ruleId)).length : 0;
@@ -26,8 +36,8 @@ export function FindingsList({ findings, policies, pinnedRuleIds }: Props) {
   );
 
   return (
-    <div>
-      <h3>Findings ({rows.length})</h3>
+    <div className="findings-block">
+      <h3 className="findings-heading">Findings ({rows.length})</h3>
       <div className="filters">
         <select aria-label="Filter by severity" value={severity} onChange={(e) => setSeverity(e.target.value)}>
           <option value="all">All severities</option>
@@ -57,31 +67,48 @@ export function FindingsList({ findings, policies, pinnedRuleIds }: Props) {
             <th>Title</th>
             <th>Status</th>
             <th>Policies</th>
-            <th>Remediation</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((f, i) => (
-            <tr key={`${f.ruleId}-${f.status}-${i}`} className={pinned?.has(f.ruleId) ? 'related-row' : undefined}>
-              <td><span className={`badge ${f.severity}`}>{SEVERITY_LABEL[f.severity]}</span></td>
-              <td>{f.ruleId}</td>
-              <td>
-                <strong>{f.title}</strong>
-                <div className="muted">{f.explanation}</div>
-              </td>
-              <td><span className={`badge ${f.status}`}>{FINDING_STATUS_LABEL[f.status]}</span></td>
-              <td>{f.policyIds.map((id) => names.get(id) ?? id).join('; ') || '—'}</td>
-              <td>
-                {f.remediation}
-                {f.references[0] && (
-                  <>
-                    {' '}
-                    <a href={f.references[0]} target="_blank" rel="noreferrer">Learn</a>
-                  </>
+          {rows.map((f, i) => {
+            const key = `${f.ruleId}-${f.status}-${i}`;
+            const isOpen = open.has(key);
+            return (
+              <Fragment key={key}>
+                <tr
+                  className={`finding-row${pinned?.has(f.ruleId) ? ' related-row' : ''}${isOpen ? ' open' : ''}`}
+                  onClick={() => toggle(key)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggle(key);
+                    }
+                  }}
+                  tabIndex={0}
+                  aria-expanded={isOpen}
+                >
+                  <td><span className={`badge ${f.severity}`}>{SEVERITY_LABEL[f.severity]}</span></td>
+                  <td className={`rule-id ${f.severity}`}>{f.ruleId}</td>
+                  <td><strong>{f.title}</strong></td>
+                  <td><span className={`badge ${f.status}`}>{FINDING_STATUS_LABEL[f.status]}</span></td>
+                  <td>{f.policyIds.map((id) => names.get(id) ?? id).join('; ') || '—'}</td>
+                </tr>
+                {isOpen && (
+                  <tr className="finding-detail">
+                    <td colSpan={5}>
+                      <p className="subhead">What this means</p>
+                      <p className="muted">{f.explanation}</p>
+                      <p className="subhead">Remediation</p>
+                      <p>{f.remediation}</p>
+                      {f.references[0] && (
+                        <a href={f.references[0]} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Learn</a>
+                      )}
+                    </td>
+                  </tr>
                 )}
-              </td>
-            </tr>
-          ))}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
       </div>
