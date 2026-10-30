@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { TenantProfile } from '../model/types';
+import { newId } from '../model/normalize';
 import { LICENSE_FIELDS, linesOf } from './labels';
 
 interface Props {
@@ -7,7 +9,18 @@ interface Props {
 }
 
 export function TenantSetup({ tenant, onChange }: Props) {
-  const names = Object.entries(tenant.displayNames);
+  const [rows, setRows] = useState<{ key: string; id: string; name: string }[]>(() =>
+    Object.entries(tenant.displayNames).map(([id, name]) => ({ key: id || newId(), id, name })),
+  );
+
+  function publish(next: { key: string; id: string; name: string }[]) {
+    setRows(next);
+    const displayNames: Record<string, string> = {};
+    for (const row of next) {
+      if (row.id.trim()) displayNames[row.id.trim()] = row.name;
+    }
+    onChange({ ...tenant, displayNames });
+  }
 
   return (
     <section>
@@ -21,16 +34,19 @@ export function TenantSetup({ tenant, onChange }: Props) {
       <div className="card">
         <h3>Licenses</h3>
         {LICENSE_FIELDS.map((f) => (
-          <label className="check" key={f.key}>
-            <input
-              type="checkbox"
-              checked={tenant.licenses[f.key]}
-              onChange={(e) =>
-                onChange({ ...tenant, licenses: { ...tenant.licenses, [f.key]: e.target.checked } })
-              }
-            />
-            {f.label}
-          </label>
+          <div key={f.key}>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={tenant.licenses[f.key]}
+                onChange={(e) =>
+                  onChange({ ...tenant, licenses: { ...tenant.licenses, [f.key]: e.target.checked } })
+                }
+              />
+              {f.label}
+            </label>
+            <p className="muted">{f.hint}</p>
+          </div>
         ))}
       </div>
 
@@ -50,33 +66,40 @@ export function TenantSetup({ tenant, onChange }: Props) {
       <div className="card">
         <h3>Friendly names (optional)</h3>
         <p className="muted">Map group, user, or role GUIDs to names so the report is readable.</p>
-        {names.map(([id, name], i) => (
-          <div className="grid-2" key={`${id}-${i}`}>
+        {rows.map((item) => (
+          <div className="grid-2" key={item.key}>
             <label className="field">
               Object ID
               <input
-                value={id}
-                onChange={(e) => {
-                  const next = { ...tenant.displayNames };
-                  delete next[id];
-                  next[e.target.value] = name;
-                  onChange({ ...tenant, displayNames: next });
-                }}
+                value={item.id}
+                onChange={(e) =>
+                  publish(rows.map((row) => (row.key === item.key ? { ...row, id: e.target.value } : row)))
+                }
               />
             </label>
             <label className="field">
               Display name
               <input
-                value={name}
-                onChange={(e) => onChange({ ...tenant, displayNames: { ...tenant.displayNames, [id]: e.target.value } })}
+                value={item.name}
+                onChange={(e) =>
+                  publish(rows.map((row) => (row.key === item.key ? { ...row, name: e.target.value } : row)))
+                }
               />
             </label>
+            <button
+              type="button"
+              className="btn secondary"
+              aria-label="Remove name"
+              onClick={() => publish(rows.filter((row) => row.key !== item.key))}
+            >
+              Remove
+            </button>
           </div>
         ))}
         <button
           type="button"
           className="btn secondary"
-          onClick={() => onChange({ ...tenant, displayNames: { ...tenant.displayNames, '': '' } })}
+          onClick={() => publish([...rows, { key: newId(), id: '', name: '' }])}
         >
           Add name
         </button>

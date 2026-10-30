@@ -28,12 +28,36 @@ export const CELL_LABEL: Record<CellState, string> = {
 };
 
 export const LICENSE_FIELDS = [
-  { key: 'entraP1' as const, label: 'Entra ID P1' },
-  { key: 'entraP2' as const, label: 'Entra ID P2' },
-  { key: 'intune' as const, label: 'Intune' },
-  { key: 'workloadIdPremium' as const, label: 'Workload Identities Premium' },
-  { key: 'defenderForCloudApps' as const, label: 'Defender for Cloud Apps' },
-  { key: 'purviewInsiderRisk' as const, label: 'Purview Insider Risk' },
+  {
+    key: 'entraP1' as const,
+    label: 'Entra ID P1',
+    hint: 'Conditional Access itself. Token protection is also gated on P1.',
+  },
+  {
+    key: 'entraP2' as const,
+    label: 'Entra ID P2',
+    hint: 'Sign-in risk and user risk. Insider risk also needs Purview.',
+  },
+  {
+    key: 'intune' as const,
+    label: 'Intune',
+    hint: 'Managed-device findings and the managed-device column.',
+  },
+  {
+    key: 'workloadIdPremium' as const,
+    label: 'Workload Identities Premium',
+    hint: 'Workload identity policies.',
+  },
+  {
+    key: 'defenderForCloudApps' as const,
+    label: 'Defender for Cloud Apps',
+    hint: 'Stored on the profile. No current rule reads this license.',
+  },
+  {
+    key: 'purviewInsiderRisk' as const,
+    label: 'Purview Insider Risk',
+    hint: 'Insider risk, together with Entra ID P2.',
+  },
 ];
 
 export const ALL_GUEST_TYPES = [
