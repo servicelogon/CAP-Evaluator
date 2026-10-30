@@ -11,6 +11,7 @@ export default function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [editing, setEditing] = useState<CAPolicy | null>(null);
   const [wizardDirty, setWizardDirty] = useState(false);
+  const [tenantSetupKey, setTenantSetupKey] = useState(0);
 
   useEffect(() => {
     saveState(state);
@@ -51,6 +52,8 @@ export default function App() {
             if (window.confirm('Clear all policies and tenant setup from this browser?')) {
               clearState();
               setEditing(null);
+              setWizardDirty(false);
+              setTenantSetupKey((k) => k + 1);
               setState(loadState());
             }
           }}
@@ -72,7 +75,11 @@ export default function App() {
       </nav>
       <main className="page">
         {state.step === 'tenant' && (
-          <TenantSetup tenant={state.tenant} onChange={(tenant) => setState({ ...state, tenant })} />
+          <TenantSetup
+            key={tenantSetupKey}
+            tenant={state.tenant}
+            onChange={(tenant) => setState({ ...state, tenant })}
+          />
         )}
         {state.step === 'policies' && !editing && (
           <PolicyList

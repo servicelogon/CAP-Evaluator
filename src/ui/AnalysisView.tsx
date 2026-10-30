@@ -13,6 +13,8 @@ interface Props {
 
 export function AnalysisView({ policies, tenant }: Props) {
   const result = useMemo(() => analyze(policies, tenant), [policies, tenant]);
+  const deductions = useMemo(() => scoreDeductions(result.findings), [result.findings]);
+  const hiddenDeductions = deductions.slice(8);
   const [population, setPopulation] = useState<Population>('allUsers');
   const [selected, setSelected] = useState<MatrixCell | null>(null);
 
@@ -28,16 +30,23 @@ export function AnalysisView({ policies, tenant }: Props) {
         <p className="score" aria-label={`Score ${result.score}`}>{result.score}</p>
         <p className="muted">{policies.length} {policies.length === 1 ? 'policy' : 'policies'} · catalog {result.catalogDate}</p>
       </div>
-      {scoreDeductions(result.findings).length > 0 && (
-        <ul className="deductions">
-          {scoreDeductions(result.findings).slice(0, 8).map((row) => (
-            <li key={`${row.ruleId}-${row.status}`}>
-              <span className={`badge ${row.severity}`}>{row.ruleId}</span>
-              <span>{row.title}</span>
-              <span className="muted">−{row.points}</span>
-            </li>
-          ))}
-        </ul>
+      {deductions.length > 0 && (
+        <>
+          <ul className="deductions">
+            {deductions.slice(0, 8).map((row) => (
+              <li key={`${row.ruleId}-${row.status}`}>
+                <span className={`badge ${row.severity}`}>{row.ruleId}</span>
+                <span>{row.title}</span>
+                <span className="muted">−{row.points}</span>
+              </li>
+            ))}
+          </ul>
+          {hiddenDeductions.length > 0 && (
+            <p className="deductions-remainder muted">
+              {hiddenDeductions.length} more, −{hiddenDeductions.reduce((sum, row) => sum + row.points, 0)}
+            </p>
+          )}
+        </>
       )}
       {policies.length === 0 && (
         <p className="warn">No policies loaded. Import JSON or load a sample on the Policies step, then come back.</p>

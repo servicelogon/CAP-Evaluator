@@ -45,6 +45,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
   const [appQuery, setAppQuery] = useState('');
   const [excludeQuery, setExcludeQuery] = useState('');
   const [customApp, setCustomApp] = useState('');
+  const [customExcludeApp, setCustomExcludeApp] = useState('');
   const [showAllRoles, setShowAllRoles] = useState(false);
   const [includeMode, setIncludeMode] = useState<TargetKind>(() =>
     policy.conditions.applications.includeUserActions.length
@@ -73,6 +74,11 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
       !q || a.name.toLowerCase().includes(q) || a.appId.includes(q) || a.aliases.some((alias) => alias.toLowerCase().includes(q)),
     );
   }, [excludeQuery]);
+
+  const customExcludeIds = useMemo(
+    () => apps.excludeApplications.filter((id) => !isCatalogAppId(id) && !isExcludeKeyword(id)),
+    [apps.excludeApplications],
+  );
 
   function patch(next: Partial<CAPolicy>) {
     setDraft({ ...draft, ...next });
@@ -295,11 +301,11 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
         <label className="check">
           <input
             type="checkbox"
-            checked={apps.excludeApplications.includes(KEYWORD.office365)}
+            checked={excludeHas(apps.excludeApplications, KEYWORD.office365)}
             onChange={(e) => setApps({
               excludeApplications: e.target.checked
-                ? [...apps.excludeApplications, KEYWORD.office365]
-                : apps.excludeApplications.filter((id) => id !== KEYWORD.office365),
+                ? addExcludeId(apps.excludeApplications, KEYWORD.office365)
+                : removeExcludeId(apps.excludeApplications, KEYWORD.office365),
             })}
           />
           Exclude Office 365
@@ -307,11 +313,11 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
         <label className="check">
           <input
             type="checkbox"
-            checked={apps.excludeApplications.includes(KEYWORD.adminPortals)}
+            checked={excludeHas(apps.excludeApplications, KEYWORD.adminPortals)}
             onChange={(e) => setApps({
               excludeApplications: e.target.checked
-                ? [...apps.excludeApplications, KEYWORD.adminPortals]
-                : apps.excludeApplications.filter((id) => id !== KEYWORD.adminPortals),
+                ? addExcludeId(apps.excludeApplications, KEYWORD.adminPortals)
+                : removeExcludeId(apps.excludeApplications, KEYWORD.adminPortals),
             })}
           />
           Exclude Microsoft Admin Portals
@@ -322,11 +328,11 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
             <label className="check" key={`ex-${a.appId}`}>
               <input
                 type="checkbox"
-                checked={apps.excludeApplications.includes(a.appId)}
+                checked={excludeHas(apps.excludeApplications, a.appId)}
                 onChange={(e) => setApps({
                   excludeApplications: e.target.checked
-                    ? [...apps.excludeApplications.filter((id) => id !== a.appId), a.appId]
-                    : apps.excludeApplications.filter((id) => id !== a.appId),
+                    ? addExcludeId(removeExcludeId(apps.excludeApplications, a.appId), a.appId)
+                    : removeExcludeId(apps.excludeApplications, a.appId),
                 })}
               />
               <span>
@@ -336,6 +342,35 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
             </label>
           ))}
         </div>
+        {customExcludeIds.map((id) => (
+          <div className="grid-2" key={id}>
+            <span>{appLabel(id)}</span>
+            <button
+              type="button"
+              className="btn secondary"
+              aria-label={`Remove excluded resource ${id}`}
+              onClick={() => setApps({ excludeApplications: removeExcludeId(apps.excludeApplications, id) })}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <label className="field">
+          Resource ID
+          <input value={customExcludeApp} onChange={(e) => setCustomExcludeApp(e.target.value)} aria-label="Excluded resource ID" />
+        </label>
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={() => {
+            const id = customExcludeApp.trim();
+            if (!id || excludeHas(apps.excludeApplications, id)) return;
+            setApps({ excludeApplications: [...apps.excludeApplications, id] });
+            setCustomExcludeApp('');
+          }}
+        >
+          Add
+        </button>
       </Blade>
 
       <Blade title="Network" summary={networkSummary(draft)}>
@@ -663,6 +698,31 @@ function ClientCheck({ draft, id, label, onChange }: { draft: CAPolicy; id: stri
 
 function toggleList(list: string[], id: string, on: boolean) {
   return on ? [...list, id] : list.filter((x) => x !== id);
+}
+
+function isCatalogAppId(id: string) {
+  const lower = id.toLowerCase();
+  return APP_CATALOG.some((a) => a.appId.toLowerCase() === lower);
+}
+
+function isExcludeKeyword(id: string) {
+  const lower = id.toLowerCase();
+  return lower === KEYWORD.office365.toLowerCase() || lower === KEYWORD.adminPortals.toLowerCase();
+}
+
+function excludeHas(list: string[], id: string) {
+  const lower = id.toLowerCase();
+  return list.some((x) => x.toLowerCase() === lower);
+}
+
+function removeExcludeId(list: string[], id: string) {
+  const lower = id.toLowerCase();
+  return list.filter((x) => x.toLowerCase() !== lower);
+}
+
+function addExcludeId(list: string[], id: string) {
+  if (excludeHas(list, id)) return list;
+  return [...list, id];
 }
 
 function toggleApp(apps: CAApplications, id: string, on: boolean, setApps: (next: Partial<CAApplications>) => void) {

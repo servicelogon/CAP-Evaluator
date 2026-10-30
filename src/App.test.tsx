@@ -34,6 +34,28 @@ test('weak sample loads policies and analysis shows a gap', () => {
   expect(document.querySelector('[data-state="gap"]')).toBeTruthy();
 });
 
+test('weak sample analysis score breakdown shows remainder when more than eight deductions', () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Load sample: weak' }));
+  fireEvent.click(screen.getByRole('button', { name: '3. Analysis' }));
+  const remainder = document.querySelector('.deductions-remainder');
+  expect(remainder).toBeTruthy();
+  expect(remainder!.textContent).toMatch(/more/i);
+});
+
+test('clear all data removes friendly-name rows from tenant setup', () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add name' }));
+  fireEvent.change(screen.getByLabelText('Object ID'), { target: { value: 'deadbeef-dead-beef-dead-beefdeadbeef' } });
+  expect(screen.getByLabelText('Object ID')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear all data' }));
+  expect(confirm).toHaveBeenCalled();
+  expect(screen.queryByLabelText('Object ID')).toBeNull();
+  confirm.mockRestore();
+});
+
 test('stepper asks before leaving an edited policy', () => {
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
   render(<App />);
