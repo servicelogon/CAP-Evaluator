@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import App from './App';
 import { STORAGE_KEY } from './ui/state';
 
@@ -32,4 +32,16 @@ test('weak sample loads policies and analysis shows a gap', () => {
   expect(screen.getByRole('heading', { name: 'Analysis' })).toBeTruthy();
   expect(screen.getAllByText('BAS-03').length).toBeGreaterThan(0);
   expect(document.querySelector('[data-state="gap"]')).toBeTruthy();
+});
+
+test('stepper asks before leaving an edited policy', () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Create new policy' }));
+  fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Unsaved MFA' } });
+  fireEvent.click(screen.getByRole('button', { name: '3. Analysis' }));
+  expect(confirm).toHaveBeenCalled();
+  expect(screen.getByRole('heading', { name: /Conditional Access policy/ })).toBeTruthy();
+  confirm.mockRestore();
 });

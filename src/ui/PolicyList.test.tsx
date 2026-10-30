@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
+import { blankPolicy } from '../model/newPolicy';
 import { goodTenant } from '../samples/goodTenant';
 import { PolicyList } from './PolicyList';
 
@@ -35,4 +36,30 @@ test('load known-good replaces the list', () => {
   );
   fireEvent.click(screen.getByRole('button', { name: 'Load sample: known-good' }));
   expect(onPolicies.mock.calls[0][0]).toHaveLength(goodTenant.policies.length);
+});
+
+test('delete asks for confirmation and keeps the policy when declined', () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  const onPolicies = vi.fn();
+  const policy = blankPolicy();
+  policy.displayName = 'Keep me';
+  render(
+    <PolicyList policies={[policy]} onPolicies={onPolicies} onTenant={() => undefined} onEdit={() => undefined} />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  expect(confirm).toHaveBeenCalled();
+  expect(onPolicies).not.toHaveBeenCalled();
+  confirm.mockRestore();
+});
+
+test('replacing an existing list with a sample asks first', () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  const onPolicies = vi.fn();
+  render(
+    <PolicyList policies={[blankPolicy()]} onPolicies={onPolicies} onTenant={() => undefined} onEdit={() => undefined} />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Load sample: weak' }));
+  expect(confirm).toHaveBeenCalled();
+  expect(onPolicies).not.toHaveBeenCalled();
+  confirm.mockRestore();
 });

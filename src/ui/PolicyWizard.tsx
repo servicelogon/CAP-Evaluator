@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { APP_CATALOG, KEYWORD, USER_ACTION, appLabel } from '../catalog/apps';
 import { AUTH_STRENGTH } from '../catalog/authStrengths';
 import { EXTENDED_ROLES, PRIVILEGED_ROLES, roleName } from '../catalog/roles';
@@ -32,12 +32,16 @@ interface Props {
   policy: CAPolicy;
   onSave: (policy: CAPolicy) => void;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 type TargetKind = 'apps' | 'userActions' | 'authContext';
 
-export function PolicyWizard({ policy, onSave, onCancel }: Props) {
+export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props) {
   const [draft, setDraft] = useState<CAPolicy>(() => structuredClone(policy));
+  useEffect(() => {
+    onDirtyChange?.(JSON.stringify(draft) !== JSON.stringify(policy));
+  }, [draft, policy, onDirtyChange]);
   const [appQuery, setAppQuery] = useState('');
   const [customApp, setCustomApp] = useState('');
   const [showAllRoles, setShowAllRoles] = useState(false);

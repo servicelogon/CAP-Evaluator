@@ -10,6 +10,7 @@ import { clearState, loadState, saveState, STEPS, stepByIndex, stepIndex, type A
 export default function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [editing, setEditing] = useState<CAPolicy | null>(null);
+  const [wizardDirty, setWizardDirty] = useState(false);
 
   useEffect(() => {
     saveState(state);
@@ -21,7 +22,14 @@ export default function App() {
 
   const idx = stepIndex(state.step);
 
+  function leaveWizard(): boolean {
+    if (!editing || !wizardDirty) return true;
+    return window.confirm('Discard unsaved policy changes?');
+  }
+
   function go(step: AppState['step']) {
+    if (!leaveWizard()) return;
+    setWizardDirty(false);
     setEditing(null);
     setState({ ...state, step });
   }
@@ -77,7 +85,11 @@ export default function App() {
         {state.step === 'policies' && editing && (
           <PolicyWizard
             policy={editing}
-            onCancel={() => setEditing(null)}
+            onDirtyChange={setWizardDirty}
+            onCancel={() => {
+              setWizardDirty(false);
+              setEditing(null);
+            }}
             onSave={(policy) => {
               const exists = state.policies.some((p) => p.id === policy.id);
               const policies = exists

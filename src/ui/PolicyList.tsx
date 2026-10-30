@@ -16,6 +16,13 @@ interface Props {
 
 export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
   const [showImport, setShowImport] = useState(false);
+
+  function loadSample(sample: { tenant: TenantProfile; policies: CAPolicy[] }) {
+    if (policies.length > 0 && !window.confirm('Replace the policies and tenant setup in this browser with the sample?')) return;
+    onTenant(sample.tenant);
+    onPolicies(sample.policies);
+  }
+
   return (
     <section>
       <p className="kicker">Step 2</p>
@@ -29,20 +36,14 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
         <button
           type="button"
           className="btn secondary"
-          onClick={() => {
-            onTenant(goodTenant.tenant);
-            onPolicies(goodTenant.policies);
-          }}
+          onClick={() => loadSample(goodTenant)}
         >
           Load sample: known-good
         </button>
         <button
           type="button"
           className="btn secondary"
-          onClick={() => {
-            onTenant(weakTenant.tenant);
-            onPolicies(weakTenant.policies);
-          }}
+          onClick={() => loadSample(weakTenant)}
         >
           Load sample: weak
         </button>
@@ -70,7 +71,9 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
           <div className="actions" style={{ margin: 0 }}>
             <span className={`badge ${STATE_CLASS[p.state]}`}>{STATE_LABEL[p.state]}</span>
             <button type="button" className="btn secondary" onClick={() => onEdit(p)}>Edit</button>
-            <button type="button" className="btn danger" onClick={() => onPolicies(policies.filter((x) => x.id !== p.id))}>
+            <button type="button" className="btn danger" onClick={() => {
+              if (window.confirm(`Delete “${p.displayName}”?`)) onPolicies(policies.filter((x) => x.id !== p.id));
+            }}>
               Delete
             </button>
           </div>
