@@ -27,11 +27,17 @@ export function AnalysisView({ policies, tenant }: Props) {
         red is a gap. Click a cell for the policies and reasons behind it.
       </p>
       <div className="score-row">
-        <p className="score" aria-label={`Score ${result.score}`}>{result.score}</p>
+        <div className="score-block">
+          <p className="kicker">Coverage score</p>
+          <p className="score" aria-label={`Score ${result.score}`}>
+            {result.score}<span className="score-of">/100</span>
+          </p>
+        </div>
         <p className="muted">{policies.length} {policies.length === 1 ? 'policy' : 'policies'} · catalog {result.catalogDate}</p>
       </div>
       {deductions.length > 0 && (
-        <>
+        <div className="card">
+          <h3>What lowered the score</h3>
           <ul className="deductions">
             {deductions.slice(0, 8).map((row) => (
               <li key={`${row.ruleId}-${row.status}`}>
@@ -46,7 +52,7 @@ export function AnalysisView({ policies, tenant }: Props) {
               {hiddenDeductions.length} more, −{hiddenDeductions.reduce((sum, row) => sum + row.points, 0)}
             </p>
           )}
-        </>
+        </div>
       )}
       {policies.length === 0 && (
         <p className="warn">No policies loaded. Import JSON or load a sample on the Policies step, then come back.</p>
@@ -65,17 +71,19 @@ export function AnalysisView({ policies, tenant }: Props) {
         policies={policies}
         pinnedRuleIds={selected ? findingsForCell(selected, result.findings).map((f) => f.ruleId) : undefined}
       />
-      <h3>Verify manually</h3>
-      <p className="muted">These checks need directory data that is not in the policy JSON.</p>
-      <ol>
-        {result.manualChecks.map((c) => (
-          <li key={c.id}>
-            <strong>{c.title}</strong>
-            <div className="muted">{c.why}</div>
-            <div className="muted">Where: {c.where}</div>
-          </li>
-        ))}
-      </ol>
+      <div className="card manual-checks">
+        <h3>Verify manually</h3>
+        <p className="muted">These checks need directory data that is not in the policy JSON.</p>
+        <ol>
+          {result.manualChecks.map((c) => (
+            <li key={c.id}>
+              <strong>{c.title}</strong>
+              <div className="muted">{c.why}</div>
+              <div className="muted">Where: {c.where}</div>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }

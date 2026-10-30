@@ -45,14 +45,15 @@ export function TenantSetup({ tenant, onChange }: Props) {
               />
               {f.label}
             </label>
-            <p className="muted">{f.hint}</p>
+            <p className="hint">{f.hint}</p>
           </div>
         ))}
       </div>
 
       <div className="card">
+        <h3>Break-glass accounts</h3>
         <label className="field">
-          Break-glass account IDs or UPNs
+          Account IDs or UPNs
           <textarea
             rows={4}
             value={tenant.breakGlass.join('\n')}
@@ -67,7 +68,7 @@ export function TenantSetup({ tenant, onChange }: Props) {
         <h3>Friendly names (optional)</h3>
         <p className="muted">Map group, user, or role GUIDs to names so the report is readable.</p>
         {rows.map((item) => (
-          <div className="grid-2" key={item.key}>
+          <div className="name-row" key={item.key}>
             <label className="field">
               Object ID
               <input

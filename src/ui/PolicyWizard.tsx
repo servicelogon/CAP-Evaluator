@@ -109,9 +109,10 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
         onSave(draft);
       }}
     >
-      <p className="kicker">Microsoft Entra</p>
+      <p className="kicker">Policies</p>
       <h2>{draft.id === policy.id && policy.displayName !== 'New policy' ? 'Edit' : 'New'} Conditional Access policy</h2>
       <p className="lede">The same assignment, condition, and access-control sections as the Entra admin center.</p>
+      <button type="button" className="text-btn" onClick={onCancel}>Back to policies</button>
 
       <label className="field">
         Name
@@ -343,7 +344,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
           ))}
         </div>
         {customExcludeIds.map((id) => (
-          <div className="grid-2" key={id}>
+          <div className="name-row exclude-row" key={id}>
             <span>{appLabel(id)}</span>
             <button
               type="button"

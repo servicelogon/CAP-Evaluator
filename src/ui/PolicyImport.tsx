@@ -40,7 +40,7 @@ export function PolicyImport({ onImport }: Props) {
       <p className="muted">
         Choose a file exported from this app, or a Graph response from <code>GET /identity/conditionalAccess/policies</code>.
       </p>
-      <label className="btn" style={{ cursor: 'pointer', display: 'inline-block' }}>
+      <label className="btn file-btn">
         Choose JSON file
         <input
           type="file"
@@ -60,7 +60,7 @@ export function PolicyImport({ onImport }: Props) {
       <details className="import-paste">
         <summary>Or paste JSON</summary>
       <textarea
-        className="search"
+        className="code-input"
         rows={8}
         value={text}
         onChange={(e) => setText(e.target.value)}

@@ -1,5 +1,4 @@
-import type { PolicyState, Population } from '../model/types';
-import type { CellState } from '../model/types';
+import type { CellState, FindingStatus, PolicyState, Population, RuleFamily, Severity } from '../model/types';
 
 export const STATE_LABEL: Record<PolicyState, string> = {
   enabled: 'On',
@@ -25,6 +24,30 @@ export const CELL_LABEL: Record<CellState, string> = {
   gap: 'Gap',
   requiresLicense: 'License',
   na: 'n/a',
+};
+
+export const SEVERITY_LABEL: Record<Severity, string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  info: 'Info',
+};
+
+export const FINDING_STATUS_LABEL: Record<FindingStatus, string> = {
+  gap: 'Gap',
+  partial: 'Partial',
+  requiresLicense: 'Needs license',
+  unverified: 'Unverified',
+};
+
+export const FAMILY_LABEL: Record<RuleFamily, string> = {
+  baseline: 'Baseline',
+  admin: 'Admin',
+  apps: 'Apps',
+  weakening: 'Weakening',
+  risk: 'Risk',
+  hygiene: 'Hygiene',
 };
 
 export const LICENSE_FIELDS = [
