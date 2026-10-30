@@ -77,8 +77,11 @@ export function HeatMap({ matrices, population, onPopulation, selected, onSelect
       </div>
       {selected && (
         <div className="cell-detail">
-          <strong>{SURFACES.find((s) => s.id === selected.surface)?.label} · {CONTROLS.find((c) => c.id === selected.control)?.label}</strong>
-          <p>{CELL_LABEL[selected.state]}</p>
+          <div className="cell-detail-head">
+            <strong>{SURFACES.find((s) => s.id === selected.surface)?.label} · {CONTROLS.find((c) => c.id === selected.control)?.label}</strong>
+            <span className={`badge ${selected.state}`}>{CELL_LABEL[selected.state]}</span>
+            <button type="button" className="btn secondary" onClick={() => onSelect(null)}>Close</button>
+          </div>
           {selected.reasons.map((r) => <p className="muted" key={r}>{r}</p>)}
           {selected.policyIds.length > 0 && (
             <p className="muted">
@@ -103,7 +106,6 @@ export function HeatMap({ matrices, population, onPopulation, selected, onSelect
               </ul>
             </>
           )}
-          <button type="button" className="btn secondary" onClick={() => onSelect(null)}>Close</button>
         </div>
       )}
     </div>

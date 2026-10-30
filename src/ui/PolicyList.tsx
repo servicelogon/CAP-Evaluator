@@ -33,6 +33,9 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
       <div className="actions">
         <button type="button" className="btn" onClick={() => onEdit(blankPolicy())}>Create new policy</button>
         <button type="button" className="btn secondary" onClick={() => setShowImport((v) => !v)}>Import a JSON file</button>
+      </div>
+      <div className="examples">
+        <span className="examples-label">Examples</span>
         <button
           type="button"
           className="btn secondary"
@@ -58,18 +61,37 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
         />
       )}
 
-      {policies.length === 0 && <p className="muted">No policies yet. Create a policy, or import a JSON file.</p>}
+      {policies.length === 0 && (
+        <div className="card">
+          <p className="muted">No policies yet. Create a policy, or import a JSON file.</p>
+        </div>
+      )}
       {policies.map((p) => {
         const summary = policyCardSummary(p);
         return (
         <article className="card policy-card" key={p.id}>
           <div>
-            <h3>{p.displayName}</h3>
-            <div className="meta">{p.id}</div>
-            <div className="meta">{summary.who} · {summary.resources} · {summary.access}</div>
+            <div className="policy-title">
+              <h3>{p.displayName}</h3>
+              <span className={`badge ${STATE_CLASS[p.state]}`}>{STATE_LABEL[p.state]}</span>
+            </div>
+            <div className="meta policy-id">{p.id}</div>
+            <dl className="policy-facts">
+              <div>
+                <dt>Who</dt>
+                <dd>{summary.who}</dd>
+              </div>
+              <div>
+                <dt>Resources</dt>
+                <dd>{summary.resources}</dd>
+              </div>
+              <div>
+                <dt>Access</dt>
+                <dd>{summary.access}</dd>
+              </div>
+            </dl>
           </div>
-          <div className="actions" style={{ margin: 0 }}>
-            <span className={`badge ${STATE_CLASS[p.state]}`}>{STATE_LABEL[p.state]}</span>
+          <div className="policy-actions">
             <button type="button" className="btn secondary" onClick={() => onEdit(p)}>Edit</button>
             <button type="button" className="btn danger" onClick={() => {
               if (window.confirm(`Delete “${p.displayName}”?`)) onPolicies(policies.filter((x) => x.id !== p.id));

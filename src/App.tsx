@@ -33,69 +33,80 @@ export default function App() {
     setWizardDirty(false);
     setEditing(null);
     setState({ ...state, step });
+    window.scrollTo(0, 0);
   }
+
+  const narrow = state.step !== 'analysis';
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="brand">
-          <img className="mark" src={`${import.meta.env.BASE_URL}logo.png`} alt="" />
-          <div>
-            <h1>CA Gap Evaluator</h1>
-            <p>Conditional Access coverage, analyzed locally.</p>
+      <div className="chrome">
+        <header className="app-header">
+          <div className="shell">
+            <div className="brand">
+              <img className="mark" src={`${import.meta.env.BASE_URL}logo.png`} alt="" />
+              <div>
+                <h1>CA Gap Evaluator</h1>
+                <p>Conditional Access coverage, analyzed locally.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                if (window.confirm('Clear all policies and tenant setup from this browser?')) {
+                  clearState();
+                  setEditing(null);
+                  setWizardDirty(false);
+                  setTenantSetupKey((k) => k + 1);
+                  setState(loadState());
+                }
+              }}
+            >
+              Clear all data
+            </button>
           </div>
-        </div>
-        <button
-          type="button"
-          className="link"
-          onClick={() => {
-            if (window.confirm('Clear all policies and tenant setup from this browser?')) {
-              clearState();
-              setEditing(null);
-              setWizardDirty(false);
-              setTenantSetupKey((k) => k + 1);
-              setState(loadState());
-            }
-          }}
-        >
-          Clear all data
-        </button>
-      </header>
-      <nav className="stepper" aria-label="Steps">
-        {STEPS.map((s) => (
-          <button
-            type="button"
-            key={s.id}
-            className={s.id === state.step ? 'current' : ''}
-            onClick={() => go(s.id)}
-          >
-            {s.index + 1}. {s.label}
-          </button>
-        ))}
-      </nav>
+        </header>
+        <nav className="stepper" aria-label="Steps">
+          <div className="shell stepper-track">
+            {STEPS.map((s) => (
+              <button
+                type="button"
+                key={s.id}
+                className={s.id === state.step ? 'current' : ''}
+                onClick={() => go(s.id)}
+              >
+                {s.index + 1}. {s.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+      </div>
       <main className="page">
-        {state.step === 'tenant' && (
-          <TenantSetup
-            key={tenantSetupKey}
-            tenant={state.tenant}
-            onChange={(tenant) => setState({ ...state, tenant })}
-          />
-        )}
-        {state.step === 'policies' && !editing && (
-          <PolicyList
-            policies={state.policies}
-            onPolicies={(policies) => setState({ ...state, policies })}
-            onTenant={(tenant) => setState({ ...state, tenant })}
-            onEdit={setEditing}
-          />
-        )}
-        {state.step === 'policies' && editing && (
-          <PolicyWizard
-            policy={editing}
-            onDirtyChange={setWizardDirty}
+        <div className={narrow ? 'page-narrow' : undefined}>
+          {state.step === 'tenant' && (
+            <TenantSetup
+              key={tenantSetupKey}
+              tenant={state.tenant}
+              onChange={(tenant) => setState({ ...state, tenant })}
+            />
+          )}
+          {state.step === 'policies' && !editing && (
+            <PolicyList
+              policies={state.policies}
+              onPolicies={(policies) => setState({ ...state, policies })}
+              onTenant={(tenant) => setState({ ...state, tenant })}
+              onEdit={setEditing}
+            />
+          )}
+          {state.step === 'policies' && editing && (
+            <PolicyWizard
+              policy={editing}
+              onDirtyChange={setWizardDirty}
             onCancel={() => {
               setWizardDirty(false);
               setEditing(null);
+              window.scrollTo(0, 0);
             }}
             onSave={(policy) => {
               const exists = state.policies.some((p) => p.id === policy.id);
@@ -104,17 +115,19 @@ export default function App() {
                 : [...state.policies, policy];
               setState({ ...state, policies });
               setEditing(null);
+              window.scrollTo(0, 0);
             }}
-          />
-        )}
-        {state.step === 'analysis' && (
-          <AnalysisView policies={state.policies} tenant={state.tenant} />
-        )}
-        {state.step === 'export' && (
-          <ExportView policies={state.policies} tenant={state.tenant} />
-        )}
+            />
+          )}
+          {state.step === 'analysis' && (
+            <AnalysisView policies={state.policies} tenant={state.tenant} />
+          )}
+          {state.step === 'export' && (
+            <ExportView policies={state.policies} tenant={state.tenant} />
+          )}
+        </div>
         {!editing && (
-          <div className="footer-nav">
+          <div className={`footer-nav${narrow ? ' footer-nav-narrow' : ''}`}>
             <button
               type="button"
               className="btn secondary"
