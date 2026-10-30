@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { analyze } from '../engine/analyze';
+import { findingsForCell } from '../engine/cellFindings';
+import { scoreDeductions } from '../engine/score';
 import type { CAPolicy, MatrixCell, Population, TenantProfile } from '../model/types';
 import { FindingsList } from './FindingsList';
 import { HeatMap } from './HeatMap';
@@ -26,6 +28,17 @@ export function AnalysisView({ policies, tenant }: Props) {
         <p className="score" aria-label={`Score ${result.score}`}>{result.score}</p>
         <p className="muted">{policies.length} {policies.length === 1 ? 'policy' : 'policies'} · catalog {result.catalogDate}</p>
       </div>
+      {scoreDeductions(result.findings).length > 0 && (
+        <ul className="deductions">
+          {scoreDeductions(result.findings).slice(0, 8).map((row) => (
+            <li key={`${row.ruleId}-${row.status}`}>
+              <span className={`badge ${row.severity}`}>{row.ruleId}</span>
+              <span>{row.title}</span>
+              <span className="muted">−{row.points}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       {policies.length === 0 && (
         <p className="warn">No policies loaded. Import JSON or load a sample on the Policies step, then come back.</p>
       )}
@@ -35,8 +48,14 @@ export function AnalysisView({ policies, tenant }: Props) {
         onPopulation={setPopulation}
         selected={selected}
         onSelect={setSelected}
+        policies={policies}
+        findings={result.findings}
       />
-      <FindingsList findings={result.findings} policies={policies} />
+      <FindingsList
+        findings={result.findings}
+        policies={policies}
+        pinnedRuleIds={selected ? findingsForCell(selected, result.findings).map((f) => f.ruleId) : undefined}
+      />
       <h3>Verify manually</h3>
       <p className="muted">These checks need directory data that is not in the policy JSON.</p>
       <ol>

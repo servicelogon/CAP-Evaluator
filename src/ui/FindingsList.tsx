@@ -4,26 +4,29 @@ import type { CAPolicy, Finding, RuleFamily, Severity } from '../model/types';
 interface Props {
   findings: Finding[];
   policies: CAPolicy[];
+  pinnedRuleIds?: string[];
 }
 
 const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
 const FAMILIES: RuleFamily[] = ['baseline', 'admin', 'apps', 'weakening', 'risk', 'hygiene'];
 
-export function FindingsList({ findings, policies }: Props) {
+export function FindingsList({ findings, policies, pinnedRuleIds }: Props) {
   const [severity, setSeverity] = useState<string>('all');
   const [family, setFamily] = useState<string>('all');
   const [policyId, setPolicyId] = useState<string>('all');
   const names = useMemo(() => new Map(policies.map((p) => [p.id, p.displayName])), [policies]);
 
+  const pinned = pinnedRuleIds && pinnedRuleIds.length > 0 ? new Set(pinnedRuleIds) : null;
   const rows = findings.filter((f) =>
-    (severity === 'all' || f.severity === severity)
+    (pinned === null || pinned.has(f.ruleId))
+    && (severity === 'all' || f.severity === severity)
     && (family === 'all' || f.family === family)
     && (policyId === 'all' || f.policyIds.includes(policyId)),
   );
 
   return (
     <div>
-      <h3>Findings ({rows.length})</h3>
+      <h3>{pinned ? `Related findings (${rows.length})` : `Findings (${rows.length})`}</h3>
       <div className="filters">
         <select aria-label="Filter by severity" value={severity} onChange={(e) => setSeverity(e.target.value)}>
           <option value="all">All severities</option>
@@ -39,6 +42,7 @@ export function FindingsList({ findings, policies }: Props) {
         </select>
       </div>
       {rows.length === 0 && <p className="muted">No findings match the filters.</p>}
+      <div className="findings-scroll">
       <table className="findings">
         <thead>
           <tr>
@@ -74,6 +78,7 @@ export function FindingsList({ findings, policies }: Props) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

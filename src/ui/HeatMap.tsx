@@ -1,5 +1,6 @@
 import { CONTROLS, SURFACES } from '../catalog/surfaces';
-import type { CoverageMatrix, MatrixCell, Population } from '../model/types';
+import { findingsForCell } from '../engine/cellFindings';
+import type { CAPolicy, CoverageMatrix, Finding, MatrixCell, Population } from '../model/types';
 import { CELL_LABEL, POP_LABEL } from './labels';
 
 interface Props {
@@ -8,10 +9,13 @@ interface Props {
   onPopulation: (p: Population) => void;
   selected: MatrixCell | null;
   onSelect: (cell: MatrixCell | null) => void;
+  policies: CAPolicy[];
+  findings: Finding[];
 }
 
-export function HeatMap({ matrices, population, onPopulation, selected, onSelect }: Props) {
+export function HeatMap({ matrices, population, onPopulation, selected, onSelect, policies, findings }: Props) {
   const matrix = matrices[population];
+  const related = selected ? findingsForCell(selected, findings) : [];
 
   return (
     <div>
@@ -77,7 +81,27 @@ export function HeatMap({ matrices, population, onPopulation, selected, onSelect
           <p>{CELL_LABEL[selected.state]}</p>
           {selected.reasons.map((r) => <p className="muted" key={r}>{r}</p>)}
           {selected.policyIds.length > 0 && (
-            <p className="muted">Policies: {selected.policyIds.join(', ')}</p>
+            <p className="muted">
+              Policies:{' '}
+              {selected.policyIds.map((id, index) => (
+                <span key={id}>
+                  {index > 0 ? ', ' : ''}
+                  {policies.find((p) => p.id === id)?.displayName ?? id}
+                </span>
+              ))}
+            </p>
+          )}
+          {related.length > 0 && (
+            <>
+              <p className="subhead">Related findings</p>
+              <ul className="related">
+                {related.map((finding) => (
+                  <li key={finding.ruleId}>
+                    <span className={`badge ${finding.severity}`}>{finding.ruleId}</span> {finding.title}
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           <button type="button" className="btn secondary" onClick={() => onSelect(null)}>Close</button>
         </div>
