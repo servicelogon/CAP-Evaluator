@@ -5,6 +5,7 @@ import { weakTenant } from '../samples/weakTenant';
 import type { CAPolicy, TenantProfile } from '../model/types';
 import { STATE_CLASS, STATE_LABEL } from './labels';
 import { PolicyImport } from './PolicyImport';
+import { policyCardSummary } from './policySummary';
 
 interface Props {
   policies: CAPolicy[];
@@ -57,11 +58,14 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
       )}
 
       {policies.length === 0 && <p className="muted">No policies yet. Create a policy, or import a JSON file.</p>}
-      {policies.map((p) => (
+      {policies.map((p) => {
+        const summary = policyCardSummary(p);
+        return (
         <article className="card policy-card" key={p.id}>
           <div>
             <h3>{p.displayName}</h3>
             <div className="meta">{p.id}</div>
+            <div className="meta">{summary.who} · {summary.resources} · {summary.access}</div>
           </div>
           <div className="actions" style={{ margin: 0 }}>
             <span className={`badge ${STATE_CLASS[p.state]}`}>{STATE_LABEL[p.state]}</span>
@@ -71,7 +75,8 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
             </button>
           </div>
         </article>
-      ))}
+        );
+      })}
     </section>
   );
 }
