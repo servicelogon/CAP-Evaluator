@@ -316,8 +316,6 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
           />
           Exclude Microsoft Admin Portals
         </label>
-        {apps.includeApplications.includes(KEYWORD.all) && (
-          <>
         <input className="search" value={excludeQuery} onChange={(e) => setExcludeQuery(e.target.value)} placeholder="Search resources to exclude" aria-label="Search resources to exclude" />
         <div className="app-pick">
           {filteredExclude.map((a) => (
@@ -338,8 +336,6 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
             </label>
           ))}
         </div>
-          </>
-        )}
       </Blade>
 
       <Blade title="Network" summary={networkSummary(draft)}>

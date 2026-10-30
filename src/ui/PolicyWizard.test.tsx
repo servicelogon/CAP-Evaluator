@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import { AUTH_STRENGTH } from '../catalog/authStrengths';
 import { USER_ACTION } from '../catalog/apps';
@@ -49,8 +49,11 @@ test('Azure CLI does not claim that only All resources covers Graph', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Target resources' }));
   fireEvent.click(screen.getByLabelText('Select resources'));
   fireEvent.change(screen.getByLabelText('Search resources'), { target: { value: 'Azure CLI' } });
-  expect(screen.getByText('This is a client app and cannot be targeted.')).toBeTruthy();
-  expect(screen.queryByText('Microsoft Graph can only be covered via All resources.')).toBeNull();
+  const includePick = document.querySelectorAll('.app-pick')[0];
+  expect(includePick).toBeTruthy();
+  const scope = within(includePick as HTMLElement);
+  expect(scope.getByText('This is a client app and cannot be targeted.')).toBeTruthy();
+  expect(scope.queryByText('Microsoft Graph can only be covered via All resources.')).toBeNull();
 });
 
 test('excluding Office 365 writes the keyword', () => {
