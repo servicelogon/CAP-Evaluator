@@ -240,3 +240,12 @@ const SPECIAL_LABELS = new Map<string, string>([
 export function appLabel(idOrKeyword: string): string {
   return SPECIAL_LABELS.get(idOrKeyword.toLowerCase()) ?? lookupApp(idOrKeyword)?.name ?? `Unknown app (${idOrKeyword})`;
 }
+
+const GRAPH_CLIENT_IDS = new Set<string>([APP.microsoftGraph, APP.azureAdGraph, APP.graphPowerShell, APP.graphExplorer]);
+
+/** Short picker warning. Null when the app can be targeted. */
+export function pickerWarning(app: CatalogApp): string | null {
+  if (app.targetable) return null;
+  if (GRAPH_CLIENT_IDS.has(app.appId)) return 'Microsoft Graph can only be covered via All resources.';
+  return 'This is a client app and cannot be targeted.';
+}

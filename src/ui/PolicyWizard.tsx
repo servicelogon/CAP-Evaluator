@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { APP_CATALOG, KEYWORD, USER_ACTION, appLabel } from '../catalog/apps';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { APP_CATALOG, KEYWORD, USER_ACTION, appLabel, pickerWarning } from '../catalog/apps';
 import { AUTH_STRENGTH } from '../catalog/authStrengths';
 import { EXTENDED_ROLES, PRIVILEGED_ROLES, roleName } from '../catalog/roles';
 import type { CAApplications, CAPolicy, CAUsers, PolicyState } from '../model/types';
@@ -32,14 +32,20 @@ interface Props {
   policy: CAPolicy;
   onSave: (policy: CAPolicy) => void;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 type TargetKind = 'apps' | 'userActions' | 'authContext';
 
-export function PolicyWizard({ policy, onSave, onCancel }: Props) {
+export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props) {
   const [draft, setDraft] = useState<CAPolicy>(() => structuredClone(policy));
+  useEffect(() => {
+    onDirtyChange?.(JSON.stringify(draft) !== JSON.stringify(policy));
+  }, [draft, policy, onDirtyChange]);
   const [appQuery, setAppQuery] = useState('');
+  const [excludeQuery, setExcludeQuery] = useState('');
   const [customApp, setCustomApp] = useState('');
+  const [customExcludeApp, setCustomExcludeApp] = useState('');
   const [showAllRoles, setShowAllRoles] = useState(false);
   const [includeMode, setIncludeMode] = useState<TargetKind>(() =>
     policy.conditions.applications.includeUserActions.length
@@ -61,6 +67,18 @@ export function PolicyWizard({ policy, onSave, onCancel }: Props) {
       !q || a.name.toLowerCase().includes(q) || a.appId.includes(q) || a.aliases.some((x) => x.toLowerCase().includes(q)),
     );
   }, [appQuery]);
+
+  const filteredExclude = useMemo(() => {
+    const q = excludeQuery.trim().toLowerCase();
+    return APP_CATALOG.filter((a) =>
+      !q || a.name.toLowerCase().includes(q) || a.appId.includes(q) || a.aliases.some((alias) => alias.toLowerCase().includes(q)),
+    );
+  }, [excludeQuery]);
+
+  const customExcludeIds = useMemo(
+    () => apps.excludeApplications.filter((id) => !isCatalogAppId(id) && !isExcludeKeyword(id)),
+    [apps.excludeApplications],
+  );
 
   function patch(next: Partial<CAPolicy>) {
     setDraft({ ...draft, ...next });
@@ -225,7 +243,7 @@ export function PolicyWizard({ policy, onSave, onCancel }: Props) {
                       <input type="checkbox" checked={apps.includeApplications.includes(a.appId)} onChange={(e) => toggleApp(apps, a.appId, e.target.checked, setApps)} />
                       <span>
                         {a.name}
-                        {!a.targetable && <span className="app-note"> This is a client app and cannot be targeted. Microsoft Graph can only be covered via All resources.</span>}
+                        {pickerWarning(a) && <span className="app-note">{pickerWarning(a)}</span>}
                         <span className="app-note">{a.appId}</span>
                       </span>
                     </label>
@@ -280,13 +298,79 @@ export function PolicyWizard({ policy, onSave, onCancel }: Props) {
         )}
 
         <p className="subhead">Exclude</p>
-        <label className="field">
-          Excluded cloud apps
-          <textarea rows={3} placeholder="App IDs, Office365, or MicrosoftAdminPortals" value={apps.excludeApplications.join('\n')} onChange={(e) => setApps({ excludeApplications: linesOf(e.target.value) })} />
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={excludeHas(apps.excludeApplications, KEYWORD.office365)}
+            onChange={(e) => setApps({
+              excludeApplications: e.target.checked
+                ? addExcludeId(apps.excludeApplications, KEYWORD.office365)
+                : removeExcludeId(apps.excludeApplications, KEYWORD.office365),
+            })}
+          />
+          Exclude Office 365
         </label>
-        {apps.excludeApplications.length > 0 && (
-          <p className="muted">{apps.excludeApplications.map(appLabel).join(', ')}</p>
-        )}
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={excludeHas(apps.excludeApplications, KEYWORD.adminPortals)}
+            onChange={(e) => setApps({
+              excludeApplications: e.target.checked
+                ? addExcludeId(apps.excludeApplications, KEYWORD.adminPortals)
+                : removeExcludeId(apps.excludeApplications, KEYWORD.adminPortals),
+            })}
+          />
+          Exclude Microsoft Admin Portals
+        </label>
+        <input className="search" value={excludeQuery} onChange={(e) => setExcludeQuery(e.target.value)} placeholder="Search resources to exclude" aria-label="Search resources to exclude" />
+        <div className="app-pick">
+          {filteredExclude.map((a) => (
+            <label className="check" key={`ex-${a.appId}`}>
+              <input
+                type="checkbox"
+                checked={excludeHas(apps.excludeApplications, a.appId)}
+                onChange={(e) => setApps({
+                  excludeApplications: e.target.checked
+                    ? addExcludeId(removeExcludeId(apps.excludeApplications, a.appId), a.appId)
+                    : removeExcludeId(apps.excludeApplications, a.appId),
+                })}
+              />
+              <span>
+                {a.name}
+                {pickerWarning(a) && <span className="app-note">{pickerWarning(a)}</span>}
+              </span>
+            </label>
+          ))}
+        </div>
+        {customExcludeIds.map((id) => (
+          <div className="grid-2" key={id}>
+            <span>{appLabel(id)}</span>
+            <button
+              type="button"
+              className="btn secondary"
+              aria-label={`Remove excluded resource ${id}`}
+              onClick={() => setApps({ excludeApplications: removeExcludeId(apps.excludeApplications, id) })}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <label className="field">
+          Resource ID
+          <input value={customExcludeApp} onChange={(e) => setCustomExcludeApp(e.target.value)} aria-label="Excluded resource ID" />
+        </label>
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={() => {
+            const id = customExcludeApp.trim();
+            if (!id || excludeHas(apps.excludeApplications, id)) return;
+            setApps({ excludeApplications: [...apps.excludeApplications, id] });
+            setCustomExcludeApp('');
+          }}
+        >
+          Add
+        </button>
       </Blade>
 
       <Blade title="Network" summary={networkSummary(draft)}>
@@ -614,6 +698,31 @@ function ClientCheck({ draft, id, label, onChange }: { draft: CAPolicy; id: stri
 
 function toggleList(list: string[], id: string, on: boolean) {
   return on ? [...list, id] : list.filter((x) => x !== id);
+}
+
+function isCatalogAppId(id: string) {
+  const lower = id.toLowerCase();
+  return APP_CATALOG.some((a) => a.appId.toLowerCase() === lower);
+}
+
+function isExcludeKeyword(id: string) {
+  const lower = id.toLowerCase();
+  return lower === KEYWORD.office365.toLowerCase() || lower === KEYWORD.adminPortals.toLowerCase();
+}
+
+function excludeHas(list: string[], id: string) {
+  const lower = id.toLowerCase();
+  return list.some((x) => x.toLowerCase() === lower);
+}
+
+function removeExcludeId(list: string[], id: string) {
+  const lower = id.toLowerCase();
+  return list.filter((x) => x.toLowerCase() !== lower);
+}
+
+function addExcludeId(list: string[], id: string) {
+  if (excludeHas(list, id)) return list;
+  return [...list, id];
 }
 
 function toggleApp(apps: CAApplications, id: string, on: boolean, setApps: (next: Partial<CAApplications>) => void) {

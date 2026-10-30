@@ -405,3 +405,8 @@ code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-si
 ol { padding-left: 18px; }
 ol li { margin: 0 0 14px; }
 ol li strong { letter-spacing: -0.01em; }
+
+.deductions, .related { list-style: none; padding: 0; margin: 0 0 18px; }
+.deductions li, .related li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.deductions li span:nth-child(2) { flex: 1; }
+.findings-scroll { overflow-x: auto; }

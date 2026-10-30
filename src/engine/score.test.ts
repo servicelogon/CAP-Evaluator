@@ -1,5 +1,5 @@
 import type { Finding, FindingStatus, Severity } from '../model/types';
-import { computeScore } from './score';
+import { computeScore, pointsFor, scoreDeductions } from './score';
 
 const f = (severity: Severity, status: FindingStatus, ruleId = 'BAS-01'): Finding => ({
   ruleId, title: 't', family: 'baseline', severity, status, policyIds: [], explanation: '', remediation: '', references: [],
@@ -39,4 +39,28 @@ describe('computeScore', () => {
   test('never below 0', () => {
     expect(computeScore(Array.from({ length: 10 }, () => f('critical', 'gap')))).toBe(0);
   });
+});
+
+test('pointsFor matches the score weights', () => {
+  expect(pointsFor(f('critical', 'gap'))).toBe(15);
+  expect(pointsFor(f('high', 'partial'))).toBe(4);
+  expect(pointsFor(f('low', 'partial'))).toBe(0.5);
+  expect(pointsFor(f('info', 'gap'))).toBe(0);
+  expect(pointsFor(f('critical', 'requiresLicense'))).toBe(0);
+  expect(pointsFor(f('high', 'partial', 'HYG-01'))).toBe(0);
+});
+
+test('scoreDeductions lists only scored findings, largest points first', () => {
+  const rows = scoreDeductions([
+    f('low', 'gap', 'BAS-05'),
+    f('critical', 'gap', 'BAS-03'),
+    f('high', 'partial', 'HYG-01'),
+    f('medium', 'requiresLicense', 'RSK-01'),
+  ]);
+  expect(rows.map((row) => [row.ruleId, row.points])).toEqual([
+    ['BAS-03', 15],
+    ['BAS-05', 1],
+  ]);
+  expect(rows[0].status).toBe('gap');
+  expect(rows[0].title).toBe('t');
 });

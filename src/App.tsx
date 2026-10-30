@@ -10,6 +10,8 @@ import { clearState, loadState, saveState, STEPS, stepByIndex, stepIndex, type A
 export default function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [editing, setEditing] = useState<CAPolicy | null>(null);
+  const [wizardDirty, setWizardDirty] = useState(false);
+  const [tenantSetupKey, setTenantSetupKey] = useState(0);
 
   useEffect(() => {
     saveState(state);
@@ -21,7 +23,14 @@ export default function App() {
 
   const idx = stepIndex(state.step);
 
+  function leaveWizard(): boolean {
+    if (!editing || !wizardDirty) return true;
+    return window.confirm('Discard unsaved policy changes?');
+  }
+
   function go(step: AppState['step']) {
+    if (!leaveWizard()) return;
+    setWizardDirty(false);
     setEditing(null);
     setState({ ...state, step });
   }
@@ -43,6 +52,8 @@ export default function App() {
             if (window.confirm('Clear all policies and tenant setup from this browser?')) {
               clearState();
               setEditing(null);
+              setWizardDirty(false);
+              setTenantSetupKey((k) => k + 1);
               setState(loadState());
             }
           }}
@@ -64,7 +75,11 @@ export default function App() {
       </nav>
       <main className="page">
         {state.step === 'tenant' && (
-          <TenantSetup tenant={state.tenant} onChange={(tenant) => setState({ ...state, tenant })} />
+          <TenantSetup
+            key={tenantSetupKey}
+            tenant={state.tenant}
+            onChange={(tenant) => setState({ ...state, tenant })}
+          />
         )}
         {state.step === 'policies' && !editing && (
           <PolicyList
@@ -77,7 +92,11 @@ export default function App() {
         {state.step === 'policies' && editing && (
           <PolicyWizard
             policy={editing}
-            onCancel={() => setEditing(null)}
+            onDirtyChange={setWizardDirty}
+            onCancel={() => {
+              setWizardDirty(false);
+              setEditing(null);
+            }}
             onSave={(policy) => {
               const exists = state.policies.some((p) => p.id === policy.id);
               const policies = exists

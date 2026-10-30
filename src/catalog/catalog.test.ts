@@ -1,4 +1,4 @@
-import { APP, APP_CATALOG, ADMIN_PORTAL_IDS, OFFICE365_KEY_IDS, lookupApp, appLabel } from './apps';
+import { APP, APP_CATALOG, ADMIN_PORTAL_IDS, OFFICE365_KEY_IDS, lookupApp, appLabel, pickerWarning } from './apps';
 import { PRIVILEGED_ROLES, EXTENDED_ROLES, GLOBAL_ADMIN, HYBRID_IDENTITY_ADMIN, isPrivilegedRole, roleName } from './roles';
 import { AUTH_STRENGTH, isPhishResistant } from './authStrengths';
 import { SURFACES, CONTROLS, isNA } from './surfaces';
@@ -111,4 +111,14 @@ test('isNA matrix', () => {
   expect(all.filter(c => !isNA('registerDevice', c))).toEqual(['mfa', 'phishResistant']);
   expect(all.filter(c => !isNA('registerSecurityInfo', c))).toEqual(['mfa', 'phishResistant', 'managedDevice']);
   for (const s of SURFACES.filter(s => !s.id.startsWith('register'))) for (const c of all) expect(isNA(s.id, c)).toBe(false);
+});
+
+test('pickerWarning distinguishes Graph from other clients', () => {
+  const graph = lookupApp(APP.microsoftGraph)!;
+  const cli = lookupApp(APP.azureCli)!;
+  const exchange = lookupApp(APP.exchangeOnline)!;
+  expect(pickerWarning(graph)).toBe('Microsoft Graph can only be covered via All resources.');
+  expect(pickerWarning(lookupApp(APP.graphPowerShell)!)).toBe('Microsoft Graph can only be covered via All resources.');
+  expect(pickerWarning(cli)).toBe('This is a client app and cannot be targeted.');
+  expect(pickerWarning(exchange)).toBeNull();
 });

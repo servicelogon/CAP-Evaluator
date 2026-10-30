@@ -40,6 +40,8 @@ Paste the JSON (a single policy, an array, or `{ "value": [...] }`) on the Polic
 
 Rows are resource surfaces (including Microsoft Graph, Intune APIs, and Azure DevOps, which Microsoft Admin Portals does not cover). Columns are controls. Use the All users / Admins / Guests tabs to switch population.
 
+The score starts at 100. The Analysis step lists each finding that lowers it. Click a heat-map cell to see the policies that contribute to it and the findings for that resource and control.
+
 ## Limits
 
 The app has no live tenant connection. Group membership, PIM eligible assignments, service principals, and several tenant-wide settings appear on the **Verify manually** checklist.
