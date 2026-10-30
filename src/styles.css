@@ -425,9 +425,29 @@ legend { padding: 0 6px; color: var(--muted); font-size: 12px; letter-spacing: 0
 .cell-detail-head strong { flex: 1; min-width: 0; }
 .cell-detail-head .btn { flex-shrink: 0; }
 .findings-wrap, .card table { width: 100%; }
+.findings-block { margin-top: 36px; }
+.page .findings-heading { margin: 0 0 12px; }
 .findings { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 .findings th, .findings td { border-bottom: 1px solid var(--line); padding: 12px 10px; text-align: left; vertical-align: top; }
 .findings tr.related-row td { background: color-mix(in srgb, var(--covered) 12%, transparent); }
+.finding-row { cursor: pointer; }
+.finding-row:hover td { background: var(--card-2); }
+.finding-row:focus-visible td { outline: 2px solid var(--text); outline-offset: -2px; }
+.finding-row.open td { border-bottom-color: transparent; }
+.rule-id {
+  white-space: nowrap;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  width: 1%;
+}
+.rule-id.critical { color: color-mix(in srgb, var(--gap) 22%, white); }
+.rule-id.high { color: #ffc2a8; }
+.rule-id.medium { color: color-mix(in srgb, var(--partial) 28%, white); }
+.rule-id.low { color: #c5ccd8; }
+.rule-id.info { color: var(--muted); }
+.finding-detail td { background: var(--bg); padding-top: 0; }
+.finding-detail .subhead:first-child { margin-top: 0; }
+.finding-detail p:last-of-type { margin-bottom: 8px; }
 .related-note { margin-bottom: 8px; }
 .findings th { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .findings a { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
