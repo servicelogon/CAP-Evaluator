@@ -109,10 +109,14 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
         onSave(draft);
       }}
     >
-      <p className="kicker">Policies</p>
-      <h2>{draft.id === policy.id && policy.displayName !== 'New policy' ? 'Edit' : 'New'} Conditional Access policy</h2>
-      <p className="lede">The same assignment, condition, and access-control sections as the Entra admin center.</p>
-      <button type="button" className="text-btn" onClick={onCancel}>Back to policies</button>
+      <button type="button" className="text-btn back-link" onClick={onCancel}>
+        <span className="arrow-icon arrow-back" aria-hidden="true" />Back to policies
+      </button>
+      <header className="step-head">
+        <p className="kicker">Step 2 of 4 · Policies</p>
+        <h2>{draft.id === policy.id && policy.displayName !== 'New policy' ? 'Edit' : 'New'} Conditional Access policy</h2>
+        <p className="lede">The same assignment, condition, and access-control sections as the Entra admin center.</p>
+      </header>
 
       <label className="field">
         Name
@@ -186,7 +190,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
             {r.name}
           </label>
         ))}
-        <button type="button" className="btn secondary" onClick={() => setShowAllRoles((v) => !v)}>
+        <button type="button" className="btn quiet" onClick={() => setShowAllRoles((v) => !v)}>
           {showAllRoles ? 'Show fewer roles' : 'Show more roles'}
         </button>
 
@@ -254,7 +258,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
                   Resource ID
                   <input value={customApp} onChange={(e) => setCustomApp(e.target.value)} />
                 </label>
-                <button type="button" className="btn secondary" onClick={() => {
+                <button type="button" className="btn add-btn" onClick={() => {
                   const id = customApp.trim();
                   if (!id || apps.includeApplications.includes(id)) return;
                   setApps({ includeApplications: [...apps.includeApplications, id] });
@@ -348,7 +352,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
             <span>{appLabel(id)}</span>
             <button
               type="button"
-              className="btn secondary"
+              className="btn danger"
               aria-label={`Remove excluded resource ${id}`}
               onClick={() => setApps({ excludeApplications: removeExcludeId(apps.excludeApplications, id) })}
             >
@@ -362,7 +366,7 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
         </label>
         <button
           type="button"
-          className="btn secondary"
+          className="btn add-btn"
           onClick={() => {
             const id = customExcludeApp.trim();
             if (!id || excludeHas(apps.excludeApplications, id)) return;
@@ -648,9 +652,9 @@ export function PolicyWizard({ policy, onSave, onCancel, onDirtyChange }: Props)
         <Radio name="state" checked={draft.state === 'disabled'} onChange={() => patch({ state: 'disabled' })} label="Off" />
       </div>
 
-      <div className="footer-nav">
+      <div className="wizard-actions">
         <button type="button" className="btn secondary" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="btn">Save policy</button>
+        <button type="submit" className="btn btn-solid">Save policy</button>
       </div>
     </form>
   );

@@ -35,17 +35,17 @@ export function PolicyImport({ onImport }: Props) {
   }
 
   return (
-    <div className="card">
+    <div className="import-panel">
       <h3>Import a JSON file</h3>
-      <p className="muted">
+      <p className="muted block-note">
         Choose a file exported from this app, or a Graph response from <code>GET /identity/conditionalAccess/policies</code>.
       </p>
       <label className="btn file-btn">
-        Choose JSON file
+        <span className="upload-icon" aria-hidden="true" />Choose JSON file
         <input
           type="file"
           accept="application/json,.json"
-          hidden
+          className="visually-hidden"
           aria-label="Policy JSON file"
           onChange={async (e) => {
             const file = e.target.files?.[0];
@@ -58,7 +58,8 @@ export function PolicyImport({ onImport }: Props) {
         />
       </label>
       <details className="import-paste">
-        <summary>Or paste JSON</summary>
+        <summary><span className="chevron" aria-hidden="true" />Or paste JSON</summary>
+        <div className="import-paste-body">
       <textarea
         className="code-input"
         rows={8}
@@ -72,12 +73,13 @@ export function PolicyImport({ onImport }: Props) {
         Replace existing policies
       </label>
       <div className="actions">
-        <button type="button" className="btn secondary" onClick={() => apply(text)} disabled={!text.trim()}>
+        <button type="button" className="btn" onClick={() => apply(text)} disabled={!text.trim()}>
           Import pasted JSON
         </button>
       </div>
+        </div>
       </details>
-      {ok && <p className="ok">{ok}</p>}
+      {ok && <p className="ok" role="status">{ok}</p>}
       {errors.map((err) => <p className="error" key={err}>{err}</p>)}
       {notes.map((n) => <p className="warn" key={n}>{n}</p>)}
     </div>

@@ -95,3 +95,37 @@ export const ALL_GUEST_TYPES = [
 export function linesOf(value: string): string[] {
   return value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 }
+
+/** Short names for narrow screens. Full names stay in aria-labels and titles. */
+export const SURFACE_SHORT: Record<string, string> = {
+  allResources: 'All resources',
+  office365: 'Office 365',
+  adminPortals: 'Admin portals',
+  azureManagement: 'Azure management',
+  graph: 'Microsoft Graph',
+  intuneApi: 'Intune APIs',
+  azureDevOps: 'Azure DevOps',
+  thirdParty: 'Third-party apps',
+  registerSecurityInfo: 'Register security info',
+  registerDevice: 'Register or join devices',
+};
+
+export const CONTROL_SHORT: Record<string, string> = {
+  legacyBlocked: 'Legacy auth',
+  mfa: 'MFA',
+  phishResistant: 'Phish-resistant',
+  managedDevice: 'Managed device',
+  deviceCodeBlocked: 'Device code',
+  signInRisk: 'Sign-in risk',
+  userRisk: 'User risk',
+  session: 'Session',
+};
+
+/** A shape for each cell state so the map does not rely on color alone. */
+export const CELL_GLYPH: Record<CellState, string> = {
+  covered: '✓',
+  partial: '~',
+  gap: '✕',
+  requiresLicense: '',
+  na: '–',
+};

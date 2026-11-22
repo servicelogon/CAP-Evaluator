@@ -46,7 +46,7 @@ test('delete asks for confirmation and keeps the policy when declined', () => {
   render(
     <PolicyList policies={[policy]} onPolicies={onPolicies} onTenant={() => undefined} onEdit={() => undefined} />,
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Keep me' }));
   expect(confirm).toHaveBeenCalled();
   expect(onPolicies).not.toHaveBeenCalled();
   confirm.mockRestore();

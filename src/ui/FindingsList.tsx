@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CAPolicy, Finding, RuleFamily, Severity } from '../model/types';
 import { FAMILY_LABEL, FINDING_STATUS_LABEL, SEVERITY_LABEL } from './labels';
 
@@ -34,10 +34,20 @@ export function FindingsList({ findings, policies, pinnedRuleIds }: Props) {
     && (family === 'all' || f.family === family)
     && (policyId === 'all' || f.policyIds.includes(policyId)),
   );
+  const filtered = severity !== 'all' || family !== 'all' || policyId !== 'all';
 
   return (
-    <div className="findings-block">
-      <h3 className="findings-heading">Findings ({rows.length})</h3>
+    <div className="block findings-block">
+      <div className="findings-head">
+        <h3 className="block-title findings-heading">
+          Findings <span className="count">{rows.length}{filtered ? ` of ${findings.length}` : ''}</span>
+        </h3>
+        {filtered && (
+          <button type="button" className="text-btn" onClick={() => { setSeverity('all'); setFamily('all'); setPolicyId('all'); }}>
+            Reset filters
+          </button>
+        )}
+      </div>
       <div className="filters">
         <select aria-label="Filter by severity" value={severity} onChange={(e) => setSeverity(e.target.value)}>
           <option value="all">All severities</option>
@@ -53,65 +63,62 @@ export function FindingsList({ findings, policies, pinnedRuleIds }: Props) {
         </select>
       </div>
       {pinned && (
-        <p className="muted related-note">
+        <p className="related-note">
+          <span className="related-dot" aria-hidden="true" />
           {relatedCount} {relatedCount === 1 ? 'finding relates' : 'findings relate'} to the selected cell.
         </p>
       )}
-      {rows.length === 0 && <p className="muted">No findings match the filters.</p>}
-      <div className="findings-scroll">
-      <table className="findings">
-        <thead>
-          <tr>
-            <th>Severity</th>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Status</th>
-            <th>Policies</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((f, i) => {
-            const key = `${f.ruleId}-${f.status}-${i}`;
-            const isOpen = open.has(key);
-            return (
-              <Fragment key={key}>
-                <tr
-                  className={`finding-row${pinned?.has(f.ruleId) ? ' related-row' : ''}${isOpen ? ' open' : ''}`}
-                  onClick={() => toggle(key)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggle(key);
-                    }
-                  }}
-                  tabIndex={0}
-                  aria-expanded={isOpen}
-                >
-                  <td><span className={`badge ${f.severity}`}>{SEVERITY_LABEL[f.severity]}</span></td>
-                  <td className={`rule-id ${f.severity}`}>{f.ruleId}</td>
-                  <td><strong>{f.title}</strong></td>
-                  <td><span className={`badge ${f.status}`}>{FINDING_STATUS_LABEL[f.status]}</span></td>
-                  <td>{f.policyIds.map((id) => names.get(id) ?? id).join('; ') || '—'}</td>
-                </tr>
-                {isOpen && (
-                  <tr className="finding-detail">
-                    <td colSpan={5}>
+      {rows.length === 0 && <p className="muted empty-note">No findings match the filters.</p>}
+      {rows.length > 0 && (
+        <>
+          <div className="findings-columns" aria-hidden="true">
+            <span>Severity</span>
+            <span>ID</span>
+            <span>Finding</span>
+            <span>Status</span>
+            <span>Policies</span>
+          </div>
+          <ul className="findings">
+            {rows.map((f, i) => {
+              const key = `${f.ruleId}-${f.status}-${i}`;
+              const isOpen = open.has(key);
+              const policyNames = f.policyIds.map((id) => names.get(id) ?? id);
+              const detailId = `finding-${i}`;
+              return (
+                <li key={key} className={`finding${pinned?.has(f.ruleId) ? ' related-row' : ''}${isOpen ? ' open' : ''}`}>
+                  <button
+                    type="button"
+                    className="finding-row"
+                    aria-expanded={isOpen}
+                    aria-controls={isOpen ? detailId : undefined}
+                    onClick={() => toggle(key)}
+                  >
+                    <span className="f-sev"><span className={`badge ${f.severity}`}>{SEVERITY_LABEL[f.severity]}</span></span>
+                    <span className={`rule-id ${f.severity}`}>{f.ruleId}</span>
+                    <span className="f-title">{f.title}</span>
+                    <span className="f-status"><span className={`badge ${f.status}`}>{FINDING_STATUS_LABEL[f.status]}</span></span>
+                    <span className={`f-policies${policyNames.length ? '' : ' empty'}`}>{policyNames.length ? policyNames.join('; ') : '—'}</span>
+                    <span className="chevron" aria-hidden="true" />
+                  </button>
+                  {isOpen && (
+                    <div className="finding-detail" id={detailId}>
                       <p className="subhead">What this means</p>
                       <p className="muted">{f.explanation}</p>
                       <p className="subhead">Remediation</p>
                       <p>{f.remediation}</p>
                       {f.references[0] && (
-                        <a href={f.references[0]} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Learn</a>
+                        <a className="ext-link" href={f.references[0]} target="_blank" rel="noreferrer">
+                          Learn more<span className="arrow-icon" aria-hidden="true" />
+                        </a>
                       )}
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
-      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

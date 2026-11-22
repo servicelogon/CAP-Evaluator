@@ -11,7 +11,7 @@ test('starts on tenant setup and Next moves to Policies', () => {
   render(<App />);
   expect(screen.getByRole('heading', { name: 'CA Gap Evaluator' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'Tenant setup' })).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
   expect(screen.getByRole('heading', { name: 'Policies' })).toBeTruthy();
 });
 
@@ -25,7 +25,7 @@ test('toggling Entra ID P2 updates the checkbox', () => {
 
 test('weak sample loads policies and analysis shows a gap', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Load sample: weak' }));
   expect(screen.getByText(/CA01 - Require MFA/)).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '3. Analysis' }));
@@ -36,7 +36,7 @@ test('weak sample loads policies and analysis shows a gap', () => {
 
 test('weak sample analysis score breakdown shows remainder when more than eight deductions', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Load sample: weak' }));
   fireEvent.click(screen.getByRole('button', { name: '3. Analysis' }));
   const remainder = document.querySelector('.deductions-remainder');
@@ -59,11 +59,22 @@ test('clear all data removes friendly-name rows from tenant setup', () => {
 test('stepper asks before leaving an edited policy', () => {
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Create new policy' }));
   fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Unsaved MFA' } });
   fireEvent.click(screen.getByRole('button', { name: '3. Analysis' }));
   expect(confirm).toHaveBeenCalled();
   expect(screen.getByRole('heading', { name: /Conditional Access policy/ })).toBeTruthy();
   confirm.mockRestore();
+});
+
+test('loading a sample keeps its tenant setup as well as its policies', () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Load sample: known-good' }));
+  fireEvent.click(screen.getByRole('button', { name: '1. Tenant setup' }));
+  const breakGlass = screen.getByLabelText('Account IDs or UPNs') as HTMLTextAreaElement;
+  expect(breakGlass.value.trim().length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole('button', { name: '3. Analysis' }));
+  expect(screen.queryByText('WEK-01')).toBeNull();
 });
