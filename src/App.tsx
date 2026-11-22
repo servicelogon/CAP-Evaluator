@@ -44,7 +44,7 @@ export default function App() {
         <header className="app-header">
           <div className="shell">
             <div className="brand">
-              <img className="mark" src={`${import.meta.env.BASE_URL}logo.png`} alt="" />
+              <img className="mark" src={`${import.meta.env.BASE_URL}new-frontier-security-logo.png`} alt="New Frontier Security" />
               <div>
                 <h1>CA Gap Evaluator</h1>
                 <p>Conditional Access coverage, analyzed locally.</p>
