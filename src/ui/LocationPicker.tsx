@@ -90,7 +90,7 @@ export function LocationPicker({ selected, onChange, kind }: Props) {
             onChange={(e) => setNamedId(e.target.value)}
             placeholder="Paste a Graph named location GUID"
           />
-          <button type="button" className="btn secondary" onClick={addNamed}>
+          <button type="button" className="btn add-btn" onClick={addNamed}>
             Add
           </button>
         </span>

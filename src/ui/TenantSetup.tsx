@@ -24,17 +24,20 @@ export function TenantSetup({ tenant, onChange }: Props) {
 
   return (
     <section>
-      <p className="kicker">Step 1</p>
-      <h2>Tenant setup</h2>
-      <p className="lede">
-        Tell the evaluator which licenses you have and which accounts are break-glass.
-        Findings that need a license you do not have are marked “requires upgrade” instead of a gap.
-      </p>
+      <header className="step-head">
+        <p className="kicker">Step 1 of 4</p>
+        <h2>Tenant setup</h2>
+        <p className="lede">
+          Tell the evaluator which licenses you have and which accounts are break-glass.
+          Findings that need a license you do not have are marked “needs license” instead of a gap.
+        </p>
+      </header>
 
-      <div className="card">
-        <h3>Licenses</h3>
+      <div className="block">
+        <h3 className="block-title">Licenses</h3>
+        <div className="license-list">
         {LICENSE_FIELDS.map((f) => (
-          <div key={f.key}>
+          <div className="license" key={f.key}>
             <label className="check">
               <input
                 type="checkbox"
@@ -48,10 +51,11 @@ export function TenantSetup({ tenant, onChange }: Props) {
             <p className="hint">{f.hint}</p>
           </div>
         ))}
+        </div>
       </div>
 
-      <div className="card">
-        <h3>Break-glass accounts</h3>
+      <div className="block">
+        <h3 className="block-title">Break-glass accounts</h3>
         <label className="field">
           Account IDs or UPNs
           <textarea
@@ -61,12 +65,12 @@ export function TenantSetup({ tenant, onChange }: Props) {
             placeholder="One object ID or UPN per line"
           />
         </label>
-        <p className="muted">These identities are treated as the only acceptable exclusions on baseline policies.</p>
+        <p className="muted field-note">These identities are treated as the only acceptable exclusions on baseline policies.</p>
       </div>
 
-      <div className="card">
-        <h3>Friendly names (optional)</h3>
-        <p className="muted">Map group, user, or role GUIDs to names so the report is readable.</p>
+      <div className="block">
+        <h3 className="block-title">Friendly names <span className="optional">Optional</span></h3>
+        <p className="muted block-note">Map group, user, or role GUIDs to names so the report is readable.</p>
         {rows.map((item) => (
           <div className="name-row" key={item.key}>
             <label className="field">
@@ -89,7 +93,7 @@ export function TenantSetup({ tenant, onChange }: Props) {
             </label>
             <button
               type="button"
-              className="btn secondary"
+              className="btn danger"
               aria-label="Remove name"
               onClick={() => publish(rows.filter((row) => row.key !== item.key))}
             >
@@ -99,10 +103,10 @@ export function TenantSetup({ tenant, onChange }: Props) {
         ))}
         <button
           type="button"
-          className="btn secondary"
+          className="btn"
           onClick={() => publish([...rows, { key: newId(), id: '', name: '' }])}
         >
-          Add name
+          <span className="plus-icon" aria-hidden="true" />Add name
         </button>
       </div>
     </section>

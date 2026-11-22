@@ -16,18 +16,20 @@ export function ExportView({ policies, tenant }: Props) {
 
   return (
     <section>
-      <p className="kicker">Step 4</p>
-      <h2>Export</h2>
-      <p className="lede">
-        Download a printable HTML report, a findings CSV for tracking, and policy JSON you can reload later.
-      </p>
+      <header className="step-head">
+        <p className="kicker">Step 4 of 4</p>
+        <h2>Export</h2>
+        <p className="lede">
+          Download a printable HTML report, a findings CSV for tracking, and policy JSON you can reload later.
+        </p>
+      </header>
       <div className="score-row">
         <p className="score score-compact" aria-label={`Score ${result.score}`}>
           {result.score}<span className="score-of">/100</span>
         </p>
         <p className="muted">{result.findings.length} findings · {policies.length} {policies.length === 1 ? 'policy' : 'policies'}</p>
       </div>
-      <div className="card">
+      <div className="export-list">
         <div className="export-row">
           <div>
             <h3>HTML report</h3>
@@ -42,7 +44,7 @@ export function ExportView({ policies, tenant }: Props) {
               buildHtmlReport({ tenant, policies, result }),
             )}
           >
-            Download HTML report
+            <span className="download-icon" aria-hidden="true" />Download HTML report
           </button>
         </div>
         <div className="export-row">
@@ -52,14 +54,14 @@ export function ExportView({ policies, tenant }: Props) {
           </div>
           <button
             type="button"
-            className="btn secondary"
+            className="btn"
             onClick={() => downloadFile(
               'ca-gap-findings.csv',
               'text/csv;charset=utf-8',
               findingsToCsv(result.findings, policies),
             )}
           >
-            Download findings CSV
+            <span className="download-icon" aria-hidden="true" />Download findings CSV
           </button>
         </div>
         <div className="export-row">
@@ -69,14 +71,14 @@ export function ExportView({ policies, tenant }: Props) {
           </div>
           <button
             type="button"
-            className="btn secondary"
+            className="btn"
             onClick={() => downloadFile(
               'ca-gap-policies.json',
               'application/json;charset=utf-8',
               policiesToJson(policies, tenant),
             )}
           >
-            Download policy JSON
+            <span className="download-icon" aria-hidden="true" />Download policy JSON
           </button>
         </div>
       </div>

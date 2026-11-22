@@ -25,29 +25,27 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
 
   return (
     <section>
-      <p className="kicker">Step 2</p>
-      <h2>Policies</h2>
-      <p className="lede">
-        Build each policy with the same Assignments, Conditions, and Access controls as the Entra admin center. Import JSON only if you already exported policies from Graph.
-      </p>
+      <header className="step-head">
+        <p className="kicker">Step 2 of 4</p>
+        <h2>Policies</h2>
+        <p className="lede">
+          Build each policy with the same Assignments, Conditions, and Access controls as the Entra admin center. Import JSON only if you already exported policies from Graph.
+        </p>
+      </header>
       <div className="actions">
-        <button type="button" className="btn" onClick={() => onEdit(blankPolicy())}>Create new policy</button>
-        <button type="button" className="btn secondary" onClick={() => setShowImport((v) => !v)}>Import a JSON file</button>
+        <button type="button" className="btn" onClick={() => onEdit(blankPolicy())}>
+          <span className="plus-icon" aria-hidden="true" />Create new policy
+        </button>
+        <button type="button" className="btn secondary" aria-expanded={showImport} onClick={() => setShowImport((v) => !v)}>
+          Import a JSON file
+        </button>
       </div>
       <div className="examples">
-        <span className="examples-label">Examples</span>
-        <button
-          type="button"
-          className="btn secondary"
-          onClick={() => loadSample(goodTenant)}
-        >
+        <span className="examples-label">Try a sample</span>
+        <button type="button" className="btn quiet" onClick={() => loadSample(goodTenant)}>
           Load sample: known-good
         </button>
-        <button
-          type="button"
-          className="btn secondary"
-          onClick={() => loadSample(weakTenant)}
-        >
+        <button type="button" className="btn quiet" onClick={() => loadSample(weakTenant)}>
           Load sample: weak
         </button>
       </div>
@@ -61,47 +59,50 @@ export function PolicyList({ policies, onPolicies, onTenant, onEdit }: Props) {
         />
       )}
 
-      {policies.length === 0 && (
-        <div className="card">
-          <p className="muted">No policies yet. Create a policy, or import a JSON file.</p>
-        </div>
-      )}
-      {policies.map((p) => {
-        const summary = policyCardSummary(p);
-        return (
-        <article className="card policy-card" key={p.id}>
-          <div>
-            <div className="policy-title">
-              <h3>{p.displayName}</h3>
-              <span className={`badge ${STATE_CLASS[p.state]}`}>{STATE_LABEL[p.state]}</span>
-            </div>
-            <div className="meta policy-id">{p.id}</div>
-            <dl className="policy-facts">
-              <div>
-                <dt>Who</dt>
-                <dd>{summary.who}</dd>
+      <div className="block policy-block">
+        <h3 className="block-title">
+          Your policies <span className="count">{policies.length}</span>
+        </h3>
+        {policies.length === 0 && (
+          <p className="muted empty-note">No policies yet. Create a policy, import a JSON file, or load a sample to see how the evaluator works.</p>
+        )}
+        {policies.map((p) => {
+          const summary = policyCardSummary(p);
+          return (
+            <article className="policy-card" key={p.id}>
+              <div className="policy-main">
+                <div className="policy-title">
+                  <h4>{p.displayName}</h4>
+                  <span className={`badge ${STATE_CLASS[p.state]}`}>{STATE_LABEL[p.state]}</span>
+                </div>
+                <div className="policy-id">{p.id}</div>
+                <dl className="policy-facts">
+                  <div>
+                    <dt>Who</dt>
+                    <dd>{summary.who}</dd>
+                  </div>
+                  <div>
+                    <dt>Resources</dt>
+                    <dd>{summary.resources}</dd>
+                  </div>
+                  <div>
+                    <dt>Access</dt>
+                    <dd>{summary.access}</dd>
+                  </div>
+                </dl>
               </div>
-              <div>
-                <dt>Resources</dt>
-                <dd>{summary.resources}</dd>
+              <div className="policy-actions">
+                <button type="button" className="btn secondary" aria-label={`Edit ${p.displayName}`} onClick={() => onEdit(p)}>Edit</button>
+                <button type="button" className="btn danger" aria-label={`Delete ${p.displayName}`} onClick={() => {
+                  if (window.confirm(`Delete “${p.displayName}”?`)) onPolicies(policies.filter((x) => x.id !== p.id));
+                }}>
+                  Delete
+                </button>
               </div>
-              <div>
-                <dt>Access</dt>
-                <dd>{summary.access}</dd>
-              </div>
-            </dl>
-          </div>
-          <div className="policy-actions">
-            <button type="button" className="btn secondary" onClick={() => onEdit(p)}>Edit</button>
-            <button type="button" className="btn danger" onClick={() => {
-              if (window.confirm(`Delete “${p.displayName}”?`)) onPolicies(policies.filter((x) => x.id !== p.id));
-            }}>
-              Delete
-            </button>
-          </div>
-        </article>
-        );
-      })}
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }

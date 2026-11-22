@@ -24,5 +24,5 @@ test('a finding hides its explanation and remediation until the row is opened', 
   fireEvent.click(screen.getByText(finding.title));
   expect(screen.getByText(finding.explanation)).toBeTruthy();
   expect(screen.getByText(finding.remediation)).toBeTruthy();
-  expect(screen.getByRole('link', { name: 'Learn' }).getAttribute('href')).toBe('https://example.test/learn');
+  expect(screen.getByRole('link', { name: 'Learn more' }).getAttribute('href')).toBe('https://example.test/learn');
 });
