@@ -77,8 +77,9 @@ export function SiteFooter() {
   );
 }
 
-// A hairline icosahedron that turns slowly, ported from the NFS site. A still
-// frame when motion is reduced, and nothing at all where canvas is missing.
+// A hairline 3×3×3 lattice cube that turns slowly, echoing the coverage
+// matrices. A still frame when motion is reduced, and nothing at all where
+// canvas is missing.
 function FooterWire() {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -87,10 +88,15 @@ function FooterWire() {
     if (!canvas || /jsdom/i.test(navigator.userAgent)) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const phi = (1 + Math.sqrt(5)) / 2;
-    const verts = [[-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0], [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi], [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]]
-      .map(([x, y, z]) => { const l = Math.hypot(x, y, z); return [x / l, y / l, z / l]; });
-    const edges = [[0, 1], [0, 5], [0, 7], [0, 10], [0, 11], [1, 5], [1, 7], [1, 8], [1, 9], [2, 3], [2, 4], [2, 6], [2, 10], [2, 11], [3, 4], [3, 6], [3, 8], [3, 9], [4, 5], [4, 9], [4, 11], [5, 9], [5, 11], [6, 7], [6, 8], [6, 10], [7, 8], [7, 10], [8, 9], [10, 11]];
+    // 27 lattice points at -1, 0 and 1 on each axis, each joined to its
+    // neighbours along x, y and z: 54 edges in all.
+    const steps = [-1, 0, 1];
+    const verts = steps.flatMap((x) => steps.flatMap((y) => steps.map((z) => [x, y, z].map((c) => c * 0.6))));
+    const at = (x: number, y: number, z: number) => (x + 1) * 9 + (y + 1) * 3 + (z + 1);
+    const edges: number[][] = [];
+    for (const a of steps) for (const b of steps) for (const c of [-1, 0]) {
+      edges.push([at(c, a, b), at(c + 1, a, b)], [at(a, c, b), at(a, c + 1, b)], [at(a, b, c), at(a, b, c + 1)]);
+    }
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     const tilt = 0.62;
     let frame = 0;
@@ -118,7 +124,7 @@ function FooterWire() {
         .map(([a, b]) => { const s = project(verts[a], yaw); const e = project(verts[b], yaw); return { s, e, d: (s.z + e.z) / 2 }; })
         .sort((p, q) => p.d - q.d);
       for (const line of lines) {
-        ctx.globalAlpha = line.d < 0 ? 0.28 : 0.9;
+        ctx.globalAlpha = 0.2 + 0.7 * Math.min(1, Math.max(0, (line.d + 1) / 2));
         ctx.beginPath();
         ctx.moveTo(w / 2 + line.s.x * r, w / 2 - line.s.y * r);
         ctx.lineTo(w / 2 + line.e.x * r, w / 2 - line.e.y * r);
